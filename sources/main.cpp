@@ -40,10 +40,10 @@ int	main(int argc, char **argv)
 	std::vector<t_socket>			clients;
 	std::vector<t_socket>::iterator	it;
 
-	char	buffer[1024];
-	int		nread;
-
 	fd_set 							pollset;
+	char							buffer[1024];
+	int								nread;
+
 
 	try {
 		params = ft_params(argc, argv);
@@ -61,7 +61,6 @@ int	main(int argc, char **argv)
 
 	while (true)
 	{
-		std::cout << "polling\n";
 		FD_ZERO(&pollset);
 		FD_SET(server.socket, &pollset);
 		for (it = clients.begin(); it != clients.end(); it++)
@@ -70,7 +69,7 @@ int	main(int argc, char **argv)
 			return (EXIT_FAILURE);
 		if (FD_ISSET(server.socket, &pollset))
 		{
-			std::cout << "client connected\n";
+			std::cout << "new client connected\n";
 			client = ft_accept(server);
 			clients.push_back(client);
 			FD_SET(client.socket, &pollset);
@@ -83,14 +82,20 @@ int	main(int argc, char **argv)
 				nread = read(it->socket, &buffer, 1024);
 				if (nread == 0)
 				{
+					std::cout << "client disconnected\n";
+					close(it->socket);
 					clients.erase(it);
-					continue ;
 				}
-				buffer[nread] = 0;
-				std::cout << buffer << "\n";
+				else
+				{
+					buffer[nread] = 0;
+					std::cout << buffer;	
+				}
+				break ;
 			}
 		}
 	}
 
+	close(server.socket);
 	return (EXIT_SUCCESS);
 }

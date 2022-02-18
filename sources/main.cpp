@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include <sys/select.h>
+#include <unistd.h>
 
 #include "utils/colors.hpp"
 #include "utils/numbers.hpp"
@@ -32,10 +34,16 @@ t_params	ft_params(int argc, char **argv)
 
 int	main(int argc, char **argv)
 {
-	t_params				params;
-	t_socket				server;
-	t_socket				client;
-	std::vector<t_socket>	clients;
+	t_params						params;
+	t_socket						server;
+	t_socket						client;
+	std::vector<t_socket>			clients;
+	std::vector<t_socket>::iterator	it;
+
+	char	buffer[1024];
+	int		nread;
+
+	fd_set 							pollset;
 
 	try {
 		params = ft_params(argc, argv);
@@ -53,8 +61,35 @@ int	main(int argc, char **argv)
 
 	while (true)
 	{
-		client = ft_accept(server);
-		clients.push_back(client);
+		std::cout << "polling\n";
+		FD_ZERO(&pollset);
+		FD_SET(server.socket, &pollset);
+		for (it = clients.begin(); it != clients.end(); it++)
+			FD_SET(it->socket, &pollset);
+		if (select(FD_SETSIZE, &pollset, NULL, NULL, NULL) == -1)
+			return (EXIT_FAILURE);
+		if (FD_ISSET(server.socket, &pollset))
+		{
+			std::cout << "client connected\n";
+			client = ft_accept(server);
+			clients.push_back(client);
+			FD_SET(client.socket, &pollset);
+			continue ;
+		}
+		for (it = clients.begin(); it != clients.end(); it++)
+		{
+			if (FD_ISSET(it->socket, &pollset))
+			{
+				nread = read(it->socket, &buffer, 1024);
+				if (nread == 0)
+				{
+					clients.erase(it);
+					continue ;
+				}
+				buffer[nread] = 0;
+				std::cout << buffer << "\n";
+			}
+		}
 	}
 
 	return (EXIT_SUCCESS);

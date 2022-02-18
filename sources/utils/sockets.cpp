@@ -16,7 +16,7 @@ t_socket	ft_listen(int port) throw(Exception)
 	int			options = 1;
 	t_socket	server;
 
-	server.socket = socket(AF_INET, SOCK_STREAM, 0);
+	server.socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (server.socket == -1)
 		throw Exception(std::strerror(errno));
 	if (setsockopt(server.socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &options, sizeof(options)) == -1)
@@ -40,9 +40,9 @@ t_socket	ft_listen(int port) throw(Exception)
 t_socket	ft_accept(t_socket server) throw(Exception)
 {
 	t_socket	client;
-	socklen_t	length;
+	socklen_t	length = sizeof(client.address);
 
-	client.socket = accept(server.socket, (struct sockaddr *) &client.address, &length);
+	client.socket = accept4(server.socket, (struct sockaddr *) &client.address, &length, SOCK_NONBLOCK);
 	if (!client.socket)
 		throw Exception(std::strerror(errno)); 
 	return (client);

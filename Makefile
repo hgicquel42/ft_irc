@@ -2,7 +2,11 @@ NAME = ircserv
 
 FILES = \
 	main.cpp \
-	test/test.cpp \
+	utils/chars.cpp \
+	utils/colors.cpp \
+	utils/errors.cpp \
+	utils/numbers.cpp \
+	utils/sockets.cpp \
 
 INPUT = ${addprefix sources/, ${FILES}}
 
@@ -12,10 +16,10 @@ all: ${NAME}
 
 objects/%.o: sources/%.cpp
 	@mkdir -p ${dir $@}
-	c++ -Wall -Wextra -Werror -std=c++98 -c $< -o $@
+	c++ -Wall -Wextra -Werror -std=c++98 -I sources -c $< -o $@
 
 ${NAME}: ${OUTPUT}
-	c++ -Wall -Wextra -Werror -std=c++98 ${OUTPUT} -o ${NAME}
+	c++ -Wall -Wextra -Werror -std=c++98 -I sources ${OUTPUT} -o ${NAME}
 
 clean:
 	rm -rf objects
@@ -25,8 +29,8 @@ fclean:	clean
 
 re:		fclean all
 
+run: $(NAME)
+	./$(NAME)
+
 x: re
 	rm -rf objects
-
-test: $(NAME)
-	./$(NAME)

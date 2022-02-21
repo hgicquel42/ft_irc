@@ -19,10 +19,11 @@ void	ft_start(int argc, char **argv)
 	try {
 		global.server = ft_slisten(global.params.port);
 	} catch(std::exception& e) {
-		throw Exception("Could not bind port\n");
+		throw Exception("Could not bind port");
 	}
 
-	std::cout << "Listening on port " << global.params.port << "\n";
+	std::cout << "Listening on port ";
+	std::cout << global.params.port << "\n";
 
 	ft_poll(global);
 

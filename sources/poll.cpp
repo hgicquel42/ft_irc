@@ -42,7 +42,7 @@ void	ft_poll(t_global& global)
 		{
 			if (!FD_ISSET(global.clients[i].socket.file, &pollset))
 				continue ;
-			if (!ft_sread(global.clients[i].socket, &packet))
+			if (!ft_sread(global.clients[i].socket, packet))
 			{
 				global.clients[i].onDisconnect();
 				global.clients.erase(global.clients.begin() + i);

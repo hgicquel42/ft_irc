@@ -2,6 +2,9 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <vector>
+
+#include "utils/strings.hpp"
 
 #include "global.hpp"
 

@@ -5,6 +5,7 @@ FILES = \
 	utils/colors.cpp \
 	utils/errors.cpp \
 	utils/numbers.cpp \
+	utils/strings.cpp \
 	utils/sockets.cpp \
 	params.cpp \
 	poll.cpp \

@@ -3,40 +3,10 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "utils/strings.hpp"
+
 #include "global.hpp"
 #include "client.hpp"
-
-void	ft_accept(t_global& global)
-{
-	t_socket	socket;
-
-	socket = ft_saccept(global.server);
-	Client client(global, socket);
-	global.clients.push_back(client);
-
-	client.onConnect();
-}
-
-bool	ft_read(Client& client)
-{
-	char		buffer[1024];
-	int			nread;
-	std::string	packet;
-
-	nread = read(client.socket.file, &buffer, 1024);
-	if (nread == 0)
-	{
-		client.onDisconnect();
-		return (false);
-	}
-	else
-	{
-		buffer[nread] = 0;
-		packet = std::string(buffer);
-		client.onPacket(packet.substr(0, packet.length() - 2));
-		return (true);
-	}
-}
 
 /**
  * @brief polling loop
@@ -45,28 +15,41 @@ bool	ft_read(Client& client)
  */
 void	ft_poll(t_global& global)
 {
-	fd_set							pollset;
-	std::vector<Client>::iterator	iclient;
+	fd_set		pollset;
+	std::string	packet;
 
-	while (true)
+	while (true) 
 	{
 		FD_ZERO(&pollset);
 		FD_SET(global.server.file, &pollset);
-		for (iclient = global.clients.begin(); iclient != global.clients.end(); iclient++)
-			FD_SET(iclient->socket.file, &pollset);
+
+		for (size_t i = 0; i < global.clients.size(); i++)
+			FD_SET(global.clients[i].socket.file, &pollset);
+
 		if (select(FD_SETSIZE, &pollset, NULL, NULL, NULL) == -1)
-			throw Exception(strerror(errno));
+			throw Exception(strerror(errno));	
+
 		if (FD_ISSET(global.server.file, &pollset))
 		{
-			ft_accept(global);
+			t_socket socket = ft_saccept(global.server);
+			Client client(global, socket);
+			global.clients.push_back(client);
+			client.onConnect();
 			continue ;
 		}
-		for (iclient = global.clients.begin(); iclient != global.clients.end(); iclient++)
-			if (FD_ISSET(iclient->socket.file, &pollset))
+
+		for (size_t i = 0; i < global.clients.size(); i++)
+		{
+			if (!FD_ISSET(global.clients[i].socket.file, &pollset))
+				continue ;
+			if (!ft_sread(global.clients[i].socket, &packet))
+			{
+				global.clients[i].onDisconnect();
+				global.clients.erase(global.clients.begin() + i);
 				break ;
-		if (iclient == global.clients.end())
-			continue ;
-		if (!ft_read(*iclient))
-			global.clients.erase(iclient);
+			}
+			global.clients[i].onPacket(packet);
+			break ;
+		}
 	}
 }

@@ -33,3 +33,13 @@ t_socket	ft_slisten(int port) throw(Exception);
  * @return t_socket 
  */
 t_socket	ft_saccept(t_socket server) throw(Exception);
+
+/**
+ * @brief securely read from socket
+ * 
+ * @param socket 
+ * @param packet 
+ * @return true 
+ * @return false 
+ */
+bool	ft_sread(t_socket socket, std::string* packet) throw(Exception);

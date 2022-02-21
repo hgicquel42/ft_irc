@@ -4,6 +4,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <unistd.h>
+
+#include "strings.hpp"
 
 /**
  * @brief listen to port
@@ -46,4 +49,25 @@ t_socket	ft_saccept(t_socket server) throw(Exception)
 	if (!client.file)
 		throw Exception(std::strerror(errno)); 
 	return (client);
+}
+
+/**
+ * @brief securely read from socket
+ * 
+ * @param socket 
+ * @param packet 
+ * @return true 
+ * @return false 
+ */
+bool	ft_sread(t_socket socket, std::string* packet) throw(Exception)
+{
+	char buffer[1024] = {0};
+
+	int	n = read(socket.file, &buffer, 1024);
+	if (n == -1)
+		throw Exception("Could not read socket");
+	if (n == 0)
+		return (false);
+	*packet = ft_trimend(buffer);
+	return (true);
 }

@@ -12,7 +12,7 @@
 
 void	ft_start(int argc, char **argv)
 {
-	t_global	global;
+	t_global global;
 
 	global.params = ft_params(argc, argv);
 

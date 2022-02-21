@@ -24,7 +24,7 @@ typedef struct s_socket
  * @param port 
  * @return t_socket 
  */
-t_socket	ft_listen(int port) throw(Exception);
+t_socket	ft_slisten(int port) throw(Exception);
 
 /**
  * @brief accept a client
@@ -32,4 +32,4 @@ t_socket	ft_listen(int port) throw(Exception);
  * @param server 
  * @return t_socket 
  */
-t_socket	ft_accept(t_socket server) throw(Exception);
+t_socket	ft_saccept(t_socket server) throw(Exception);

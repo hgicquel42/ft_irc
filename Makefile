@@ -1,12 +1,14 @@
 NAME = ircserv
 
 FILES = \
-	main.cpp \
 	utils/chars.cpp \
 	utils/colors.cpp \
 	utils/errors.cpp \
 	utils/numbers.cpp \
 	utils/sockets.cpp \
+	params.cpp \
+	poll.cpp \
+	main.cpp \
 
 INPUT = ${addprefix sources/, ${FILES}}
 

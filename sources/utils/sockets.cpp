@@ -11,7 +11,7 @@
  * @param port 
  * @return t_socket 
  */
-t_socket	ft_listen(int port) throw(Exception)
+t_socket	ft_slisten(int port) throw(Exception)
 {
 	int			options = 1;
 	t_socket	server;
@@ -37,7 +37,7 @@ t_socket	ft_listen(int port) throw(Exception)
  * @param server 
  * @return t_socket 
  */
-t_socket	ft_accept(t_socket server) throw(Exception)
+t_socket	ft_saccept(t_socket server) throw(Exception)
 {
 	t_socket	client;
 	socklen_t	length = sizeof(client.address);

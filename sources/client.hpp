@@ -14,6 +14,7 @@ class Client
 	public:
 		t_socket	socket;
 		int			step;
+		std::string	nick;
 
 		Client(t_global& global, t_socket socket);
 		Client(const Client& from);
@@ -23,5 +24,6 @@ class Client
 
 		void	onConnect(void);
 		void	onDisconnect(void);
-		void	onPacket(std::string packet);
+		void	onPacket(std::string packet, t_global &global);
+		int		getInfos(int *ptr_step, std::string str, t_global &global);
 };

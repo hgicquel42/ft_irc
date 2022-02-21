@@ -3,36 +3,37 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "global.hpp"
+#include "client.hpp"
+
 void	ft_accept(t_global& global)
 {
-	t_socket	client;
+	t_socket	socket;
 
-	std::cout << "New client connected\n";
-
-	client = ft_saccept(global.server);
+	socket = ft_saccept(global.server);
+	Client client(global, socket);
 	global.clients.push_back(client);
 
-	// TODO: envoyer le MOTD
-	(void)global;
+	client.onConnect();
 }
 
-bool	ft_read(t_global& global, t_socket& client)
+bool	ft_read(Client& client)
 {
-	char							buffer[1024];
-	int								nread;
+	char		buffer[1024];
+	int			nread;
+	std::string	packet;
 
-	nread = read(client.socket, &buffer, 1024);
+	nread = read(client.socket.file, &buffer, 1024);
 	if (nread == 0)
 	{
-		std::cout << "Client disconnected\n";
-		close(client.socket);
+		client.onDisconnect();
 		return (false);
 	}
 	else
 	{
 		buffer[nread] = 0;
-		std::cout << buffer;
-		(void) global;
+		packet = std::string(buffer);
+		client.onPacket(packet.substr(0, packet.length() - 2));
 		return (true);
 	}
 }
@@ -45,27 +46,27 @@ bool	ft_read(t_global& global, t_socket& client)
 void	ft_poll(t_global& global)
 {
 	fd_set							pollset;
-	std::vector<t_socket>::iterator	iclient;
+	std::vector<Client>::iterator	iclient;
 
 	while (true)
 	{
 		FD_ZERO(&pollset);
-		FD_SET(global.server.socket, &pollset);
+		FD_SET(global.server.file, &pollset);
 		for (iclient = global.clients.begin(); iclient != global.clients.end(); iclient++)
-			FD_SET(iclient->socket, &pollset);
+			FD_SET(iclient->socket.file, &pollset);
 		if (select(FD_SETSIZE, &pollset, NULL, NULL, NULL) == -1)
 			throw Exception(strerror(errno));
-		if (FD_ISSET(global.server.socket, &pollset))
+		if (FD_ISSET(global.server.file, &pollset))
 		{
 			ft_accept(global);
 			continue ;
 		}
 		for (iclient = global.clients.begin(); iclient != global.clients.end(); iclient++)
-			if (FD_ISSET(iclient->socket, &pollset))
+			if (FD_ISSET(iclient->socket.file, &pollset))
 				break ;
 		if (iclient == global.clients.end())
 			continue ;
-		if (!ft_read(global, *iclient))
+		if (!ft_read(*iclient))
 			global.clients.erase(iclient);
 	}
 }

@@ -8,6 +8,7 @@ FILES = \
 	utils/sockets.cpp \
 	params.cpp \
 	poll.cpp \
+	client.cpp \
 	main.cpp \
 
 INPUT = ${addprefix sources/, ${FILES}}

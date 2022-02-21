@@ -26,7 +26,7 @@ void	ft_start(int argc, char **argv)
 
 	ft_poll(global);
 
-	close(global.server.socket);
+	close(global.server.file);
 }
 
 int	main(int argc, char **argv)

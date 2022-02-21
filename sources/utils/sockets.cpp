@@ -16,17 +16,17 @@ t_socket	ft_slisten(int port) throw(Exception)
 	int			options = 1;
 	t_socket	server;
 
-	server.socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-	if (server.socket == -1)
+	server.file = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+	if (server.file == -1)
 		throw Exception(std::strerror(errno));
-	if (setsockopt(server.socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &options, sizeof(options)) == -1)
+	if (setsockopt(server.file, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &options, sizeof(options)) == -1)
 		throw Exception(std::strerror(errno));
-	server.address.sin_family = AF_INET;
-    server.address.sin_addr.s_addr = INADDR_ANY;
-    server.address.sin_port = htons(port);
-	if (bind(server.socket, (struct sockaddr *) &server.address, sizeof(server.address)) == -1)
+	server.addr.sin_family = AF_INET;
+    server.addr.sin_addr.s_addr = INADDR_ANY;
+    server.addr.sin_port = htons(port);
+	if (bind(server.file, (struct sockaddr *) &server.addr, sizeof(server.addr)) == -1)
 		throw Exception(std::strerror(errno));
-	if (listen(server.socket, 3) == -1)
+	if (listen(server.file, 3) == -1)
 		throw Exception(std::strerror(errno));
 	return (server);
 }
@@ -40,10 +40,10 @@ t_socket	ft_slisten(int port) throw(Exception)
 t_socket	ft_saccept(t_socket server) throw(Exception)
 {
 	t_socket	client;
-	socklen_t	length = sizeof(client.address);
+	socklen_t	length = sizeof(client.addr);
 
-	client.socket = accept4(server.socket, (struct sockaddr *) &client.address, &length, SOCK_NONBLOCK);
-	if (!client.socket)
+	client.file = accept4(server.file, (struct sockaddr *) &client.addr, &length, SOCK_NONBLOCK);
+	if (!client.file)
 		throw Exception(std::strerror(errno)); 
 	return (client);
 }

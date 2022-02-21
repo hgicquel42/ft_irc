@@ -10,12 +10,12 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include "utils/errors.hpp"
+#include "errors.hpp"
 
 typedef struct s_socket
 {
-	int 				socket;
-	struct sockaddr_in	address;
+	int 				file;
+	struct sockaddr_in	addr;
 }	t_socket;
 
 /**

@@ -17,7 +17,7 @@ void	ft_accept(t_global& global)
 	client.onConnect();
 }
 
-bool	ft_read(Client& client)
+bool	ft_read(Client& client, t_global& global)
 {
 	char		buffer[1024];
 	int			nread;
@@ -33,7 +33,7 @@ bool	ft_read(Client& client)
 	{
 		buffer[nread] = 0;
 		packet = std::string(buffer);
-		client.onPacket(packet.substr(0, packet.length() - 2));
+		client.onPacket(packet.substr(0, packet.length() - 2), global);
 		return (true);
 	}
 }
@@ -66,7 +66,7 @@ void	ft_poll(t_global& global)
 				break ;
 		if (iclient == global.clients.end())
 			continue ;
-		if (!ft_read(*iclient))
+		if (!ft_read(*iclient, global))
 			global.clients.erase(iclient);
 	}
 }

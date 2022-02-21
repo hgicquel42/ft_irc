@@ -42,4 +42,4 @@ t_socket	ft_saccept(t_socket server) throw(Exception);
  * @return true 
  * @return false 
  */
-bool	ft_sread(t_socket socket, std::string* packet) throw(Exception);
+bool	ft_sread(t_socket socket, std::string& packet) throw(Exception);

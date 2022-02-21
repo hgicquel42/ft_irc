@@ -27,5 +27,6 @@ class Client
 		void	onConnect(void);
 		void	onDisconnect(void);
 		void	onPacket(std::string packet);
-		int		getInfos(std::string str);
+
+		void	getInfos(std::string packet);
 };

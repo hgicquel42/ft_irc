@@ -63,7 +63,7 @@ bool	ft_sread(t_socket socket, std::string& packet) throw(Exception)
 {
 	char buffer[1024] = {0};
 
-	int	n = read(socket.file, &buffer, 32);
+	int	n = read(socket.file, &buffer, 1024);
 	if (n == -1)
 		throw Exception("Could not read socket");
 	if (n == 0)

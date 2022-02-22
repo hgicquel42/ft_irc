@@ -11,13 +11,13 @@
 Client::Client(t_global& global, t_socket socket):
 	global(global),
 	socket(socket),
-	step(0)
+	state(REGISTERING)
 {}
 
 Client::Client(const Client& from):
 	global(from.global),
 	socket(from.socket),
-	step(from.step)
+	state(from.state)
 {}
 
 Client::~Client(void)
@@ -29,7 +29,7 @@ Client&	Client::operator=(const Client& from)
 		return (*this);
 	this->global = from.global;
 	this->socket = from.socket;
-	this->step = from.step;
+	this->state = from.state;
 	return (*this);
 }
 
@@ -49,7 +49,7 @@ void	Client::getInfos(std::string packet)
 {
 	if (packet == "CAP LS")
 	{
-		this->step++;
+		// TODO: renvoyer le bon packet
 		return ;
 	}
 
@@ -60,7 +60,6 @@ void	Client::getInfos(std::string packet)
 			throw Exception("Invalid NICK packet");
 		this->nickname = v[1];
 		// TODO: checker si le nick n'est pas deja utilise par un autre
-		this->step++;
 		return ;
 	}
 	
@@ -68,7 +67,6 @@ void	Client::getInfos(std::string packet)
 	{
 		if (packet != "PASS " + this->global.params.password)
 			throw Exception("Invalid PASS packet");
-		this->step++;
 		return ;
 	}
 
@@ -87,8 +85,6 @@ void	Client::getInfos(std::string packet)
 			throw Exception("Invalid USER packet");
 		this->username = v2[1];
 		this->hostname = v2[2];
-
-		this->step++;
 		return ;
 	}
 
@@ -99,9 +95,16 @@ void Client::onPacket(std::string packet)
 {
 	std::cout << packet << std::endl;
 
-	if (step < 4)
+	if (this->state == REGISTERING)
 	{
 		getInfos(packet);
-		return ;
+		
 	}
+
+	if (this->state == CONNECTED)
+	{
+
+	}
+
+	throw Exception("Invalid state");
 }

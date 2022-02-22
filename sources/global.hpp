@@ -12,5 +12,5 @@ typedef struct s_global
 {
 	t_params				params;
 	t_socket				server;
-	std::vector<Client>	clients;
+	std::vector<Client*>	clients;
 }	t_global;

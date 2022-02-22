@@ -29,6 +29,7 @@ Client&	Client::operator=(const Client& from)
 		return (*this);
 	this->global = from.global;
 	this->socket = from.socket;
+	this->step = from.step;
 	return (*this);
 }
 
@@ -46,56 +47,61 @@ void Client::onDisconnect(void)
 
 void	Client::getInfos(std::string packet)
 {
-	if (this->step == 0)
+	if (packet == "CAP LS")
 	{
-		if (packet != "CAP LS")
-			throw Exception("Unknown packet");
 		this->step++;
 		return ;
 	}
-	if (this->step == 1)
+
+	if (packet.rfind("NICK ", 0) == 0)
 	{
-		if (packet.rfind("PASS ", 0) != 0)
-			throw Exception("Unknown packet");
+		std::vector<std::string> v = ft_splitby(packet, ' ');
+		if (v.size() != 2)
+			throw Exception("Invalid NICK packet");
+		this->nickname = v[1];
+		// TODO: checker si le nick n'est pas deja utilise par un autre
+		this->step++;
+		return ;
+	}
+	
+	if (packet.rfind("PASS ", 0) == 0)
+	{
 		if (packet != "PASS " + this->global.params.password)
-			throw Exception("Invalid packet");
+			throw Exception("Invalid PASS packet");
 		this->step++;
 		return ;
 	}
-	if (this->step == 2)
+
+	if (packet.rfind("USER ", 0) == 0)
 	{
-		if (packet.rfind("NICK ", 0) != 0)
-			throw Exception("Unknown packet");
-		this->nickname = (packet.substr(5, packet.length() - 5));
-		this->step++;
-	}
-	if (this->step == 3)
-	{
-		if (packet.rfind("USER ", 0) != 0)
-			throw Exception("Unknown packet");
-		//USER brmasser brmasser 127.0.0.1 :Bryce MASSERON
-		std::vector<std::string> tab;
-		tab = ft_split(packet, ':');
-		if (tab.size() != 2)
+		// USER brmasser brmasser 127.0.0.1 :Bryce MASSERON
+		// https://stackoverflow.com/questions/31666247/what-is-the-difference-between-the-nick-username-and-real-name-in-irc-and-wha
+
+		std::vector<std::string> v = ft_splitby(packet, ':');
+		if (v.size() != 2)
 			throw Exception("Invalid USER packet");
-		this->realname = tab[1];
-		tab = ft_split(tab[0], ' ');
-		if (tab.size() != 4)
+		this->realname = v[1];
+
+		std::vector<std::string> v2 = ft_splitby(v[0], ' ');
+		if (v2.size() != 4)
 			throw Exception("Invalid USER packet");
-		this->username = tab[1];
+		this->username = v2[1];
+		this->hostname = v2[2];
+
 		this->step++;
 		return ;
 	}
+
+	throw Exception("Unknown packet");
 }
 
 void Client::onPacket(std::string packet)
 {
-	std::cout << packet << "\n";
-	std::cout << "step = " << this->step << std::endl;
+	std::cout << packet << std::endl;
 
-	if (step >= 0 && step < 4)
+	if (step < 4)
+	{
 		getInfos(packet);
-	else if (step == 4)
-		std::cout << "Congrats biatch, step = 4" << std::endl;
-	std::cout << "end packet" << std::endl;
+		return ;
+	}
 }

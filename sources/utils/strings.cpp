@@ -17,15 +17,57 @@ std::string ft_strpop(const std::string s)
 }
 
 /**
- * @brief true if a starts with b
+ * @brief true if string is all spaces
  * 
- * @param a 
- * @param b 
- * @return bool 
+ * @param s 
+ * @return true 
+ * @return false 
  */
-bool	ft_strstarts(const std::string a, const std::string b)
+bool	ft_strisspace(const std::string s)
 {
-	return (a.rfind(b, 0) == 0);
+	for (size_t i = 0; i < s.length(); i++)
+		if (!std::isspace(s[i]))
+			return (false);
+	return (true);
+}
+
+/**
+ * @brief true if string has at least one space
+ * 
+ * @param s 
+ * @return true 
+ * @return false 
+ */
+bool	ft_strhasspace(const std::string s)
+{
+	for (size_t i = 0; i < s.length(); i++)
+		if (std::isspace(s[i]))
+			return (true);
+	return (false);
+}
+
+/**
+ * @brief split by crlf
+ * 
+ * @param text 
+ * @param c 
+ * @return std::vector<std::string> 
+ */
+std::vector<std::string>	ft_split(std::string text)
+{
+	std::stringstream			stream(text);
+	std::vector<std::string>	result;
+	std::string					token;
+
+	while (std::getline(stream, token))
+	{
+		if (*token.rbegin() == '\r' && token.size() == 1)
+			continue ;
+		if (*token.rbegin() == '\r')
+			token = token.substr(0, token.size() - 1);
+		result.push_back(token);
+	}
+	return (result);
 }
 
 /**
@@ -35,7 +77,7 @@ bool	ft_strstarts(const std::string a, const std::string b)
  * @param c 
  * @return std::vector<std::string> 
  */
-std::vector<std::string>	ft_split(std::string text, char c)
+std::vector<std::string>	ft_splitby(std::string text, char c)
 {
 	std::stringstream			stream(text);
 	std::vector<std::string>	result;

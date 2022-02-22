@@ -14,9 +14,11 @@ class Client
 	public:
 		t_socket	socket;
 		int			step;
+		
 		std::string	nickname;
 		std::string	realname;
 		std::string	username;
+		std::string	hostname;
 
 		Client(t_global& global, t_socket socket);
 		Client(const Client& from);

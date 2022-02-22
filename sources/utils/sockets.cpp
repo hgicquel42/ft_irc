@@ -68,6 +68,6 @@ bool	ft_sread(t_socket socket, std::string& packet) throw(Exception)
 		throw Exception("Could not read socket");
 	if (n == 0)
 		return (false);
-	packet = std::string(buffer, n - 1);
+	packet = std::string(buffer, n);
 	return (true);
 }

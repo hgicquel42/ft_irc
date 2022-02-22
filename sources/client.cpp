@@ -44,47 +44,57 @@ void Client::onDisconnect(void)
 	close(this->socket.file);
 }
 
-void	Client::getInfos(std::string packet)
+int	Client::getInfos(std::string str)
 {
-	std::cout << packet << "\n";
-	// if (*ptr_step == 0)
-	// {
-	// 	if (str == "CAP LS")
-	// 		(*ptr_step)++;
-	// 	else
-	// 		throw 
-	// }
-	// else if (*ptr_step == 1)
-	// {
-	// 	if (str == "PASS " + global.params.password)
-	// 		(*ptr_step)++;
-	// }
-	// else if (*ptr_step == 2)
-	// {
-	// 	if (str.rfind("NICK", 0) == 0)
-	// 	{
-	// 		this->nick = (str.substr(5, str.length() - 5));
-	// 		(*ptr_step)++;
-	// 	}
-	// }
-	// //USER brmasser brmasser 127.0.0.1 :Bryce MASSERON
-	// else if (*ptr_step == 3)
-	// {
-	// 	if (str.compare(0, 5, "USER ") == 0)
-	// 	{
-	// 		std::vector<std::string> tab;
-	// 		tab = ft_split(str);
-			 
-	// 	}
-	// }
-	// else
-	// 	return (-1);
+	if (this->step == 0)
+	{
+		if (str.compare("CAP LS") == 0)
+			this->step++;
+		else
+			std::cout << "COUCOU>" << str << "<CACA" << std::endl;
+	}
+	else if (this->step == 1)
+	{
+		if (str == "PASS " + this->global.params.password)
+			this->step++;
+	}
+	else if (this->step == 2)
+	{
+		if (str.compare(0, 5, "NICK ") == 0)
+		{
+			this->nickname = (str.substr(5, str.length() - 5));
+			this->step++;
+		}
+	}
+	//USER brmasser brmasser 127.0.0.1 :Bryce MASSERON
+	else if (this->step == 3)
+	{
+		if (str.compare(0, 5, "USER ") == 0)
+		{
+			std::vector<std::string> tab;
+			tab = ft_split(str, ':');
+			if (tab.size() != 2)
+				throw Exception("Invalid USER packet");
+			this->realname = tab[1];
+			tab = ft_split(tab[0], ' ');
+			if (tab.size() != 4)
+				throw Exception("Invalid USER packet");
+			this->username = tab[1];
+		}
+	}
+	else
+		return (-1);
+	return (0);
 }
 
 void Client::onPacket(std::string packet)
 {
-	if (step >= 0 && step < 4)
-		this->getInfos(packet);
+	std::cout << packet << "\n";
+	std::cout << "step = " << this->step << std::endl;
 
-	// message normal
+	if (step >= 0 && step < 4)
+		getInfos(packet);
+	else if (step == 4)
+		std::cout << "Congrats biatch, step = 4" << std::endl;
+	std::cout << "end packet" << std::endl;
 }

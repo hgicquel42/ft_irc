@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include <iostream>
+
 /**
  * @brief remove last character
  * 
@@ -10,6 +12,7 @@
  */
 std::string ft_strpop(const std::string s)
 {
+	std::cout << s.size() << std::endl;
 	return (s.substr(0, s.size() - 1));
 }
 

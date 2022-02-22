@@ -46,6 +46,7 @@ void	ft_poll(t_global& global)
 			{
 				global.clients[i]->onDisconnect();
 				global.clients.erase(global.clients.begin() + i);
+				delete global.clients[i];
 				break ;
 			}
 			std::vector<std::string> v = ft_split(packet);
@@ -54,4 +55,5 @@ void	ft_poll(t_global& global)
 			break ;
 		}
 	}
+	// TODO: free clients
 }

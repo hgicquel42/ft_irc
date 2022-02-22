@@ -45,7 +45,7 @@ void Client::onDisconnect(void)
 	close(this->socket.file);
 }
 
-void	Client::getInfos(std::string packet)
+void	Client::onRegisterPacket(std::string packet)
 {
 	if (packet == "CAP LS")
 	{
@@ -67,14 +67,12 @@ void	Client::getInfos(std::string packet)
 	{
 		if (packet != "PASS " + this->global.params.password)
 			throw Exception("Invalid PASS packet");
+		this->steps.pass = true;
 		return ;
 	}
 
 	if (packet.rfind("USER ", 0) == 0)
 	{
-		// USER brmasser brmasser 127.0.0.1 :Bryce MASSERON
-		// https://stackoverflow.com/questions/31666247/what-is-the-difference-between-the-nick-username-and-real-name-in-irc-and-wha
-
 		std::vector<std::string> v = ft_splitby(packet, ':');
 		if (v.size() != 2)
 			throw Exception("Invalid USER packet");
@@ -85,6 +83,8 @@ void	Client::getInfos(std::string packet)
 			throw Exception("Invalid USER packet");
 		this->username = v2[1];
 		this->hostname = v2[2];
+
+		this->steps.user = true;
 		return ;
 	}
 
@@ -93,17 +93,22 @@ void	Client::getInfos(std::string packet)
 
 void Client::onPacket(std::string packet)
 {
-	std::cout << packet << std::endl;
-
 	if (this->state == REGISTERING)
 	{
-		getInfos(packet);
-		
+		this->onRegisterPacket(packet);
+		if (!this->steps.user)
+			return ;
+		if (!this->steps.pass)
+			return ;
+		std::cout << "Registered" << std::endl;
+		this->state = CONNECTED;
+		return ;
 	}
 
 	if (this->state == CONNECTED)
 	{
-
+		std::cout << packet << std::endl;
+		return ;
 	}
 
 	throw Exception("Invalid state");

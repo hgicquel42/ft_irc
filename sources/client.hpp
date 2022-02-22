@@ -10,6 +10,14 @@ typedef struct s_global t_global;
 #define CONNECTED 1
 #define DISCONNECTED 2
 
+typedef struct	s_steps
+{
+	bool	nick;
+	bool	pass;
+	bool 	caps;
+	bool	user;
+}	t_steps;
+
 class Client
 {
 	private:
@@ -17,8 +25,8 @@ class Client
 
 	public:
 		t_socket	socket;
+		t_steps		steps;
 		int			state;
-		int			step;
 		
 		std::string	nickname;
 		std::string	realname;
@@ -35,5 +43,5 @@ class Client
 		void	onDisconnect(void);
 		void	onPacket(std::string packet);
 
-		void	getInfos(std::string packet);
+		void	onRegisterPacket(std::string packet);
 };

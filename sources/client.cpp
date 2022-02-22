@@ -60,6 +60,7 @@ void	Client::onRegisterPacket(std::string packet)
 			throw Exception("Invalid NICK packet");
 		this->nickname = v[1];
 		// TODO: checker si le nick n'est pas deja utilise par un autre
+		this->steps.nick = true;
 		return ;
 	}
 	
@@ -96,9 +97,11 @@ void Client::onPacket(std::string packet)
 	if (this->state == REGISTERING)
 	{
 		this->onRegisterPacket(packet);
-		if (!this->steps.user)
-			return ;
 		if (!this->steps.pass)
+			return ;
+		if (!this->steps.nick)
+			return ;
+		if (!this->steps.user)
 			return ;
 		std::cout << "Registered" << std::endl;
 		this->state = CONNECTED;

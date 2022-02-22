@@ -7,6 +7,7 @@ FILES = \
 	utils/numbers.cpp \
 	utils/strings.cpp \
 	utils/sockets.cpp \
+	utils/packet.cpp \
 	params.cpp \
 	poll.cpp \
 	client.cpp \

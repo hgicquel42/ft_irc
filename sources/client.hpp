@@ -3,12 +3,12 @@
 typedef struct s_global t_global;
 
 #include "utils/sockets.hpp"
+#include "utils/packet.hpp"
 
 #include "global.hpp"
 
 #define REGISTERING 0
-#define CONNECTED 1
-#define DISCONNECTED 2
+#define REGISTERED 1
 
 typedef struct	s_steps
 {
@@ -41,7 +41,11 @@ class Client
 
 		void	onConnect(void);
 		void	onDisconnect(void);
-		void	onPacket(std::string packet);
 
-		void	onRegisterPacket(std::string packet);
+		void	onPacket(const t_packet& packet);
+		void	onRegisterPacket(const t_packet& packet);
+		void	onRegularPacket(const t_packet& packet);
+
+		void	write(const std::string& raw);
+		void	motd(void);
 };

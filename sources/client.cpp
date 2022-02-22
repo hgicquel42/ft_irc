@@ -102,15 +102,39 @@ void	Client::onRegisterPacket(const t_packet& packet)
 	{
 		if (packet.args.size() != 4)
 			throw Exception("Invalid USER packet");
-		this->realname = packet.rest;
 		this->username = packet.args[1];
 		this->hostname = packet.args[2];
+		this->realname = packet.rest;
 
 		this->steps.user = true;
 		return ;
 	}
 
 	throw Exception("Unknown packet");
+}
+
+void	Client::onChannelMessagePacket(const t_packet& packet)
+{
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+	{
+		if (this->global.clients[i] == this)
+			continue ;
+		if (this->global.clients[i]->channel != this->channel)
+			continue ;
+		this->global.clients[i]->write("PRIVMSG " + packet.args[1] + " :" + packet.rest);
+	}
+}
+
+void	Client::onPrivateMessagePacket(const t_packet& packet)
+{
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+	{
+		if (this->global.clients[i] == this)
+			continue ;
+		if (this->global.clients[i]->nickname != packet.args[1])
+			continue ;
+		this->global.clients[i]->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
+	}
 }
 
 void	Client::onRegularPacket(const t_packet& packet)
@@ -127,19 +151,10 @@ void	Client::onRegularPacket(const t_packet& packet)
 	}
 	if (packet.args[0] == "PRIVMSG")
 	{
-		if (packet.args[1] != this->channel)
-			return ;
-		for (size_t i = 0; i < this->global.clients.size(); i++)
-		{
-			if (this->global.clients[i] == this)
-				continue ;
-			if (this->global.clients[i]->channel != this->channel)
-				continue ;
-			if (packet.args[1].rfind("#", 0) == 0)
-			{
-				this->global.clients[i]->write("PRIVMSG " + this->channel + " :" + packet.rest);
-			}
-		}
+		if (packet.args[1].rfind("#", 0) == 0)
+			this->onChannelMessagePacket(packet);
+		else
+			this->onPrivateMessagePacket(packet);
 	}
 }
 
@@ -150,6 +165,16 @@ void	Client::motd(void)
 		throw Exception("MOTD not found");
 	std::stringstream buffer;
 	buffer << file.rdbuf();
+}
+
+void	Client::infos(void)
+{
+	std::cout << this->nickname << std::endl;
+	std::cout << this->username << std::endl;
+	std::cout << this->realname << std::endl;
+	std::cout << this->hostname << std::endl;
+	std::cout << this->channel << std::endl;
+	std::cout << this->state << std::endl;
 }
 
 void	Client::onPacket(const t_packet& packet)

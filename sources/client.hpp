@@ -46,7 +46,11 @@ class Client
 		void	onPacket(const t_packet& packet);
 		void	onRegisterPacket(const t_packet& packet);
 		void	onRegularPacket(const t_packet& packet);
+		
+		void	onChannelMessagePacket(const t_packet& packet);
+		void	onPrivateMessagePacket(const t_packet& packet);
 
+		void	infos(void);
 		void	write(const std::string& raw);
 		void	motd(void);
 };

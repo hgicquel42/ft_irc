@@ -44,47 +44,48 @@ void Client::onDisconnect(void)
 	close(this->socket.file);
 }
 
-int	Client::getInfos(std::string str)
+void	Client::getInfos(std::string packet)
 {
 	if (this->step == 0)
 	{
-		if (str.compare("CAP LS") == 0)
-			this->step++;
-		else
-			std::cout << "COUCOU>" << str << "<CACA" << std::endl;
+		if (packet != "CAP LS")
+			throw Exception("Unknown packet");
+		this->step++;
+		return ;
 	}
-	else if (this->step == 1)
+	if (this->step == 1)
 	{
-		if (str == "PASS " + this->global.params.password)
-			this->step++;
+		if (packet.rfind("PASS ", 0) != 0)
+			throw Exception("Unknown packet");
+		if (packet != "PASS " + this->global.params.password)
+			throw Exception("Invalid packet");
+		this->step++;
+		return ;
 	}
-	else if (this->step == 2)
+	if (this->step == 2)
 	{
-		if (str.compare(0, 5, "NICK ") == 0)
-		{
-			this->nickname = (str.substr(5, str.length() - 5));
-			this->step++;
-		}
+		if (packet.rfind("NICK ", 0) != 0)
+			throw Exception("Unknown packet");
+		this->nickname = (packet.substr(5, packet.length() - 5));
+		this->step++;
 	}
-	//USER brmasser brmasser 127.0.0.1 :Bryce MASSERON
-	else if (this->step == 3)
+	if (this->step == 3)
 	{
-		if (str.compare(0, 5, "USER ") == 0)
-		{
-			std::vector<std::string> tab;
-			tab = ft_split(str, ':');
-			if (tab.size() != 2)
-				throw Exception("Invalid USER packet");
-			this->realname = tab[1];
-			tab = ft_split(tab[0], ' ');
-			if (tab.size() != 4)
-				throw Exception("Invalid USER packet");
-			this->username = tab[1];
-		}
+		if (packet.rfind("USER ", 0) != 0)
+			throw Exception("Unknown packet");
+		//USER brmasser brmasser 127.0.0.1 :Bryce MASSERON
+		std::vector<std::string> tab;
+		tab = ft_split(packet, ':');
+		if (tab.size() != 2)
+			throw Exception("Invalid USER packet");
+		this->realname = tab[1];
+		tab = ft_split(tab[0], ' ');
+		if (tab.size() != 4)
+			throw Exception("Invalid USER packet");
+		this->username = tab[1];
+		this->step++;
+		return ;
 	}
-	else
-		return (-1);
-	return (0);
 }
 
 void Client::onPacket(std::string packet)

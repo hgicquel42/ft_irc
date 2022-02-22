@@ -17,6 +17,18 @@ std::string ft_strpop(const std::string s)
 }
 
 /**
+ * @brief true if a starts with b
+ * 
+ * @param a 
+ * @param b 
+ * @return bool 
+ */
+bool	ft_strstarts(const std::string a, const std::string b)
+{
+	return (a.rfind(b, 0) == 0);
+}
+
+/**
  * @brief split by char
  * 
  * @param text 

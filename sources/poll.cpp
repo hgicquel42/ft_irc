@@ -5,6 +5,7 @@
 
 #include "utils/strings.hpp"
 #include "utils/packet.hpp"
+#include "utils/colors.hpp"
 
 #include "global.hpp"
 #include "client.hpp"
@@ -49,9 +50,13 @@ void	ft_poll(t_global& global)
 				delete global.clients[i];
 				break ;
 			}
-			std::vector<std::string> v = ft_split(packet);
-			for (size_t j = 0; j < v.size(); j++)
-				global.clients[i]->onPacket(ft_unpack(v[j]));
+			try {
+				std::vector<std::string> v = ft_split(packet);
+				for (size_t j = 0; j < v.size(); j++)
+					global.clients[i]->onPacket(ft_unpack(v[j]));
+			} catch (std::exception& e){
+				std::cerr << ft_red(e.what()) << std::endl;
+			}
 			break ;
 		}
 	}

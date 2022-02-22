@@ -10,6 +10,7 @@
 #include "utils/strings.hpp"
 #include "utils/vector.hpp"
 #include "utils/packet.hpp"
+#include "utils/set.hpp"
 
 #include "global.hpp"
 #include <sys/types.h>
@@ -19,13 +20,15 @@
 Client::Client(t_global& global, t_socket socket):
 	global(global),
 	socket(socket),
-	state(REGISTERING)
+	state(REGISTERING),
+	opped(false)
 {}
 
 Client::Client(const Client& from):
 	global(from.global),
 	socket(from.socket),
-	state(from.state)
+	state(from.state),
+	opped(from.opped)
 {}
 
 Client::~Client(void)
@@ -38,6 +41,13 @@ Client&	Client::operator=(const Client& from)
 	this->global = from.global;
 	this->socket = from.socket;
 	this->state = from.state;
+	this->steps = from.steps;
+	this->nickname = from.nickname;
+	this->username = from.username;
+	this->hostname = from.hostname;
+	this->realname = from.realname;
+	this->opped = from.opped;
+	this->channel = from.channel;
 	return (*this);
 }
 
@@ -119,7 +129,7 @@ void	Client::onChannelMessagePacket(const t_packet& packet)
 	{
 		if (this->global.clients[i] == this)
 			continue ;
-		if (this->global.clients[i]->channel != this->channel)
+		if (!ft_setexists(this->global.clients[i]->channels, packet.args[1]))
 			continue ;
 		this->global.clients[i]->write("PRIVMSG " + packet.args[1] + " :" + packet.rest);
 	}
@@ -137,6 +147,18 @@ void	Client::onPrivateMessagePacket(const t_packet& packet)
 	}
 }
 
+void	Client::onNoticePacket(const t_packet& packet)
+{
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+	{
+		if (this->global.clients[i] == this)
+			continue ;
+		if (this->global.clients[i]->nickname != packet.args[1])
+			continue ;
+		this->global.clients[i]->write(":" + this->nickname + " NOTICE " + packet.args[1] + " :" + packet.rest);
+	}
+}
+
 void	Client::onRegularPacket(const t_packet& packet)
 {
 	std::cout << packet.raw << std::endl;
@@ -145,16 +167,53 @@ void	Client::onRegularPacket(const t_packet& packet)
 	{
 		this->onDisconnect();
 	}
+
 	if (packet.args[0] == "JOIN")
 	{
-		this->channel = packet.args[1];
+		if (packet.args.size() != 2)
+			throw Exception("Invalid JOIN packet");
+		this->channels.insert(packet.args[1]);
 	}
+
 	if (packet.args[0] == "PRIVMSG")
 	{
+		if (packet.args.size() != 2)
+			throw Exception("Invalid PRIVMSG packet");
 		if (packet.args[1].rfind("#", 0) == 0)
 			this->onChannelMessagePacket(packet);
 		else
 			this->onPrivateMessagePacket(packet);
+	}
+
+	if (packet.args[0] == "NOTICE")
+	{
+		if (packet.args.size() != 2)
+			throw Exception("Invalid NOTICE packet");
+		this->onNoticePacket(packet);
+	}
+
+	if (packet.args[0] == "OPER")
+	{
+		if (packet.args.size() != 3)
+			throw Exception("Invalid OPER packet");
+		if (packet.args[2] != this->global.params.password)
+			throw Exception("Invalid password");
+		this->opped = true;
+	}
+
+	if (packet.args[0] == "KICK")
+	{
+		if (packet.args.size() != 3)
+			throw Exception("Invalid KICK packet");
+		for (size_t i = 0; i < this->global.clients.size(); i++)
+		{
+			if (this->global.clients[i]->nickname != packet.args[2])
+				continue ;
+			ft_setrem(this->global.clients[i]->channels, packet.args[1]);
+			this->global.clients[i]->write("KICK " + packet.args[1] + " " + packet.args[2] + " :");
+			return ;
+		}
+		throw Exception("Unknown nickname");
 	}
 }
 

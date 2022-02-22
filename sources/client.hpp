@@ -1,5 +1,7 @@
 #pragma once
 
+#include <set>
+
 typedef struct s_global t_global;
 
 #include "utils/sockets.hpp"
@@ -32,7 +34,10 @@ class Client
 		std::string	realname;
 		std::string	username;
 		std::string	hostname;
-		std::string channel;
+
+		std::string				channel;
+		std::set<std::string>	channels;
+		bool					opped;
 
 		Client(t_global& global, t_socket socket);
 		Client(const Client& from);
@@ -49,6 +54,7 @@ class Client
 		
 		void	onChannelMessagePacket(const t_packet& packet);
 		void	onPrivateMessagePacket(const t_packet& packet);
+		void	onNoticePacket(const t_packet& packet);
 
 		void	infos(void);
 		void	write(const std::string& raw);

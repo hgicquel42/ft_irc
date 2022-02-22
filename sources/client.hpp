@@ -6,6 +6,10 @@ typedef struct s_global t_global;
 
 #include "global.hpp"
 
+#define REGISTERING 0
+#define CONNECTED 1
+#define DISCONNECTED 2
+
 class Client
 {
 	private:
@@ -13,6 +17,7 @@ class Client
 
 	public:
 		t_socket	socket;
+		int			state;
 		int			step;
 		
 		std::string	nickname;

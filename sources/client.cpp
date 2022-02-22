@@ -209,7 +209,7 @@ void	Client::onRegularPacket(const t_packet& packet)
 		{
 			if (this->global.clients[i]->nickname != packet.args[2])
 				continue ;
-			ft_setrem(this->global.clients[i]->channels, packet.args[1]);
+			this->global.clients[i]->channels.erase(packet.args[1]);
 			this->global.clients[i]->write("KICK " + packet.args[1] + " " + packet.args[2] + " :");
 			return ;
 		}

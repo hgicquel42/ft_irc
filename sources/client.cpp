@@ -43,7 +43,10 @@ Client&	Client::operator=(const Client& from)
 
 void	Client::write(const std::string& packet)
 {
-	if (send(this->socket.file, packet.c_str(), packet.length(), 0) == -1)
+	std::string line(packet + "\r\n");
+	std::cout << "-> " << packet << std::endl;
+
+	if (send(this->socket.file, line.c_str(), line.length(), 0) == -1)
 		throw Exception(strerror(errno));
 }
 
@@ -63,7 +66,7 @@ void	Client::onRegisterPacket(const t_packet& packet)
 {
 	if (packet.raw == "CAP LS")
 	{
-		this->write("CAP * LS :\r\n");
+		this->write("CAP * LS :");
 		this->steps.caps = true;
 		return ;
 	}
@@ -118,18 +121,35 @@ void	Client::onRegularPacket(const t_packet& packet)
 	{
 		this->onDisconnect();
 	}
+	if (packet.args[0] == "JOIN")
+	{
+		this->channel = packet.args[1];
+	}
+	if (packet.args[0] == "PRIVMSG")
+	{
+		if (packet.args[1] != this->channel)
+			return ;
+		for (size_t i = 0; i < this->global.clients.size(); i++)
+		{
+			if (this->global.clients[i] == this)
+				continue ;
+			if (this->global.clients[i]->channel != this->channel)
+				continue ;
+			if (packet.args[1].rfind("#", 0) == 0)
+			{
+				this->global.clients[i]->write("PRIVMSG " + this->channel + " :" + packet.rest);
+			}
+		}
+	}
 }
 
 void	Client::motd(void)
 {
-	std::cout << "Welcome to the GigaChadIRC server.\n";
-
 	std::ifstream file(std::string("motd.txt").c_str(), std::ios::binary);
 	if (!file)
 		throw Exception("MOTD not found");
 	std::stringstream buffer;
 	buffer << file.rdbuf();
-	this->write("PRIVMSG lol :hello world\r\n");
 }
 
 void	Client::onPacket(const t_packet& packet)
@@ -147,6 +167,7 @@ void	Client::onPacket(const t_packet& packet)
 			return ;
 		std::cout << "Registered" << std::endl;
 		this->state = REGISTERED;
+		this->write("001 * :Hello world");
 		this->motd();
 		return ;
 	}

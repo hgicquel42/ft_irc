@@ -1,6 +1,7 @@
 #include "packet.hpp"
 
 #include <sstream>
+#include <iostream>
 
 #include "strings.hpp"
 
@@ -13,14 +14,14 @@
  */
 t_packet	ft_unpack(const std::string& raw)
 {
-	t_packet			packet;
-	std::stringstream	stream(raw);
-	
-	std::string	rawargs;
-	std::getline(stream, rawargs, ':');
+	t_packet	packet;
 
 	packet.raw = raw;
-	packet.args = ft_splitby(rawargs, ' ');
-	packet.rest = stream.str();
+	size_t end = raw.find(':');
+	if (end == std::string::npos)
+		end = raw.size();
+	packet.args = ft_splitby(raw.substr(0, end), ' ');
+	if (end != raw.size())
+		packet.rest = raw.substr(end + 1, raw.size() - end);
 	return (packet);
 }

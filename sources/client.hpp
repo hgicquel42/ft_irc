@@ -32,6 +32,7 @@ class Client
 		std::string	realname;
 		std::string	username;
 		std::string	hostname;
+		std::string channel;
 
 		Client(t_global& global, t_socket socket);
 		Client(const Client& from);

@@ -2,10 +2,12 @@
 
 #include <string>
 
+using namespace std;
+
 typedef struct s_params
 {
 	int			port;
-	std::string	password;
+	string	password;
 }	t_params;
 
 /**

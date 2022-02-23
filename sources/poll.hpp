@@ -2,6 +2,8 @@
 
 #include "global.hpp"
 
+using namespace std;
+
 /**
  * @brief polling loop
  * 

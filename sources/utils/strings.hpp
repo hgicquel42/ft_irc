@@ -3,13 +3,15 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 /**
  * @brief remove last character
  * 
  * @param s 
- * @return std::string 
+ * @return string 
  */
-std::string ft_strpop(std::string s);
+string ft_strpop(string s);
 
 /**
  * @brief true if string is all spaces
@@ -18,7 +20,7 @@ std::string ft_strpop(std::string s);
  * @return true 
  * @return false 
  */
-bool	ft_strisspace(const std::string s);
+bool	ft_strisspace(const string s);
 
 /**
  * @brief true if string has at least one space
@@ -27,22 +29,22 @@ bool	ft_strisspace(const std::string s);
  * @return true 
  * @return false 
  */
-bool	ft_strhasspace(const std::string s);
+bool	ft_strhasspace(const string s);
 
 /**
  * @brief split by crlf
  * 
  * @param text 
  * @param c 
- * @return std::vector<std::string> 
+ * @return vector<string> 
  */
-std::vector<std::string>	ft_split(std::string text);
+vector<string>	ft_split(string text);
 
 /**
  * @brief split by char
  * 
  * @param text 
  * @param c 
- * @return std::vector<std::string> 
+ * @return vector<string> 
  */
-std::vector<std::string>	ft_splitby(std::string text, char c);
+vector<string>	ft_splitby(string text, char c);

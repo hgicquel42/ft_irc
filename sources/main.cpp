@@ -10,6 +10,8 @@
 #include "params.hpp"
 #include "poll.hpp"
 
+using namespace std;
+
 void	ft_start(int argc, char **argv)
 {
 	t_global global;
@@ -18,12 +20,12 @@ void	ft_start(int argc, char **argv)
 
 	try {
 		global.server = ft_slisten(global.params.port);
-	} catch(std::exception& e) {
+	} catch(exception& e) {
 		throw Exception("Could not bind port");
 	}
 
-	std::cout << "Listening on port ";
-	std::cout << global.params.port << "\n";
+	cout << "Listening on port ";
+	cout << global.params.port << "\n";
 
 	ft_poll(global);
 
@@ -35,8 +37,8 @@ int	main(int argc, char **argv)
 	try {
 		ft_start(argc, argv);
 		return (EXIT_SUCCESS);
-	} catch(std::exception& e) {
-		std::cerr << ft_red(e.what()) << "\n";
+	} catch(exception& e) {
+		cerr << ft_red(e.what()) << "\n";
 		return (EXIT_FAILURE);
 	}
 }

@@ -11,6 +11,7 @@ FILES = \
 	params.cpp \
 	poll.cpp \
 	client.cpp \
+	channel.cpp \
 	main.cpp \
 
 INPUT = ${addprefix sources/, ${FILES}}

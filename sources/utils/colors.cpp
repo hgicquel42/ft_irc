@@ -1,12 +1,14 @@
 #include "colors.hpp"
 
+using namespace std;
+
 /**
  * @brief colorize text
  * 
  * @param text 
- * @return std::string 
+ * @return string 
  */
-std::string	ft_red(std::string text)
+string	ft_red(string text)
 {
 	return (CRED + text + CRESET);
 }
@@ -15,9 +17,9 @@ std::string	ft_red(std::string text)
  * @brief colorize text
  * 
  * @param text 
- * @return std::string 
+ * @return string 
  */
-std::string	ft_green(std::string text)
+string	ft_green(string text)
 {
 	return (CGREEN + text + CRESET);
 }

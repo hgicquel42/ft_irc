@@ -2,13 +2,25 @@
 
 #include <string>
 
-class Exception: public std::exception
+using namespace std;
+
+class Exception: public exception
 {
 	private:
-		std::string	msg;
+		string	msg;
 	public:
-		Exception(std::string msg) throw();
+		Exception(string msg) throw();
 		~Exception(void) throw();
+		virtual const char* what() const throw();
+};
+
+class Error: public exception
+{
+	private:
+		string	msg;
+	public:
+		Error(string msg) throw();
+		~Error(void) throw();
 		virtual const char* what() const throw();
 };
 

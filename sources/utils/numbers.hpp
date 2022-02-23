@@ -2,6 +2,8 @@
 
 #include <string>
 
+using namespace std;
+
 /**
  * @brief parse unsigned int
  * 
@@ -10,4 +12,4 @@
  * @return true 
  * @return false 
  */
-bool	ft_xatoui16(std::string string, int *result);
+bool	ft_xatoui16(string string, int *result);

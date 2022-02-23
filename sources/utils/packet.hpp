@@ -3,11 +3,13 @@
 #include <vector>
 #include <string>
 
+using namespace std;
+
 typedef struct s_packet
 {
-	std::string					raw;
-	std::vector<std::string>	args;
-	std::string					rest;
+	string			raw;
+	vector<string>	args;
+	string			rest;
 }	t_packet;
 
 /**
@@ -16,4 +18,4 @@ typedef struct s_packet
  * @param raw 
  * @return t_packet 
  */
-t_packet	ft_unpack(const std::string& raw);
+t_packet	ft_unpack(const string& raw);

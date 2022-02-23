@@ -4,15 +4,17 @@
 
 #include <iostream>
 
+using namespace std;
+
 /**
  * @brief remove last character
  * 
  * @param s 
- * @return std::string 
+ * @return string 
  */
-std::string ft_strpop(const std::string s)
+string ft_strpop(const string s)
 {
-	std::cout << s.size() << std::endl;
+	cout << s.size() << endl;
 	return (s.substr(0, s.size() - 1));
 }
 
@@ -23,10 +25,10 @@ std::string ft_strpop(const std::string s)
  * @return true 
  * @return false 
  */
-bool	ft_strisspace(const std::string s)
+bool	ft_strisspace(const string s)
 {
 	for (size_t i = 0; i < s.length(); i++)
-		if (!std::isspace(s[i]))
+		if (!isspace(s[i]))
 			return (false);
 	return (true);
 }
@@ -38,10 +40,10 @@ bool	ft_strisspace(const std::string s)
  * @return true 
  * @return false 
  */
-bool	ft_strhasspace(const std::string s)
+bool	ft_strhasspace(const string s)
 {
 	for (size_t i = 0; i < s.length(); i++)
-		if (std::isspace(s[i]))
+		if (isspace(s[i]))
 			return (true);
 	return (false);
 }
@@ -51,15 +53,15 @@ bool	ft_strhasspace(const std::string s)
  * 
  * @param text 
  * @param c 
- * @return std::vector<std::string> 
+ * @return vector<string> 
  */
-std::vector<std::string>	ft_split(std::string text)
+vector<string>	ft_split(string text)
 {
-	std::stringstream			stream(text);
-	std::vector<std::string>	result;
-	std::string					token;
+	stringstream	stream(text);
+	vector<string>	result;
+	string			token;
 
-	while (std::getline(stream, token))
+	while (getline(stream, token))
 	{
 		if (*token.rbegin() == '\r' && token.size() == 1)
 			continue ;
@@ -75,15 +77,15 @@ std::vector<std::string>	ft_split(std::string text)
  * 
  * @param text 
  * @param c 
- * @return std::vector<std::string> 
+ * @return vector<string> 
  */
-std::vector<std::string>	ft_splitby(std::string text, char c)
+vector<string>	ft_splitby(string text, char c)
 {
-	std::stringstream			stream(text);
-	std::vector<std::string>	result;
-	std::string					token;
+	stringstream	stream(text);
+	vector<string>	result;
+	string			token;
 
-	while (std::getline(stream, token, c))
+	while (getline(stream, token, c))
 		result.push_back(token);
 	return (result);
 }

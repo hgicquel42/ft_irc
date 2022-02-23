@@ -12,6 +12,8 @@ typedef struct s_global t_global;
 #define REGISTERING 0
 #define REGISTERED 1
 
+using namespace std;
+
 typedef struct	s_steps
 {
 	bool	nick;
@@ -30,13 +32,13 @@ class Client
 		t_steps		steps;
 		int			state;
 		
-		std::string	nickname;
-		std::string	realname;
-		std::string	username;
-		std::string	hostname;
+		string	nickname;
+		string	realname;
+		string	username;
+		string	hostname;
 
-		std::set<std::string>	channels;
-		bool					opped;
+		vector<string>	channels;
+		bool			opped;
 
 		Client(t_global& global, t_socket socket);
 		Client(const Client& from);
@@ -54,8 +56,15 @@ class Client
 		void	onChannelMessagePacket(const t_packet& packet);
 		void	onPrivateMessagePacket(const t_packet& packet);
 		void	onNoticePacket(const t_packet& packet);
+		void	onJoinPacket(const t_packet& packet);
+		void	onQuitPacket(const t_packet& packet);
+		void	onNickPacket(const t_packet& packet);
+		void	onOperPacket(const t_packet& packet);
+		void	onKickPacket(const t_packet& packet);
+		void	onModePacket(const t_packet& packet);
 
-		void	infos(void);
-		void	write(const std::string& raw);
+		void	write(const string& raw);
+		void	disconnect(const string& reason);
+
 		void	motd(void);
 };

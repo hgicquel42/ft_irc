@@ -6,18 +6,20 @@
 #define CGREEN "\033[0;32m"
 #define CRESET "\033[0m"
 
-/**
- * @brief colorize text
- * 
- * @param text 
- * @return std::string 
- */
-std::string	ft_red(std::string text);
+using namespace std;
 
 /**
  * @brief colorize text
  * 
  * @param text 
- * @return std::string 
+ * @return string 
  */
-std::string	ft_green(std::string text);
+string	ft_red(string text);
+
+/**
+ * @brief colorize text
+ * 
+ * @param text 
+ * @return string 
+ */
+string	ft_green(string text);

@@ -2,18 +2,20 @@
 
 #include <algorithm>
 
+using namespace std;
+
 /**
  * @brief find in vector
  * 
  * @tparam T 
  * @param v 
  * @param e 
- * @return std::vector<T>::iterator 
+ * @return vector<T>::iterator 
  */
 template <typename T>
-typename std::vector<T>::iterator	ft_vecfind(std::vector<T>& v, T e)
+typename vector<T>::iterator	ft_vecfind(vector<T>& v, T e)
 {
-	return (std::find(v.begin(), v.end(), e));
+	return (find(v.begin(), v.end(), e));
 }
 
 /**
@@ -24,7 +26,22 @@ typename std::vector<T>::iterator	ft_vecfind(std::vector<T>& v, T e)
  * @param e 
  */
 template <typename T>
-void	ft_vecrem(std::vector<T>& v, T e)
+void	ft_vecrem(vector<T>& v, T e)
 {
 	v.erase(ft_vecfind(v, e));
+}
+
+/**
+ * @brief true if e is in v
+ * 
+ * @tparam T 
+ * @param v 
+ * @param e 
+ * @return true 
+ * @return false 
+ */
+template <typename T>
+bool	ft_vecexists(vector<T>& v, T e)
+{
+	return (find(v.begin(), v.end(), e) != v.end());
 }

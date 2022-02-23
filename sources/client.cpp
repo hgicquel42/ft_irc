@@ -6,16 +6,19 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-
-#include "utils/strings.hpp"
-#include "utils/vector.hpp"
-#include "utils/packet.hpp"
-#include "utils/set.hpp"
-
-#include "global.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#include "utils/colors.hpp"
+#include "utils/strings.hpp"
+#include "utils/vector.hpp"
+#include "utils/packet.hpp"
+
+#include "global.hpp"
+#include "channel.hpp"
+
+using namespace std;
 
 Client::Client(t_global& global, t_socket socket):
 	global(global),
@@ -51,10 +54,16 @@ Client&	Client::operator=(const Client& from)
 	return (*this);
 }
 
-void	Client::write(const std::string& packet)
+void	Client::disconnect(const string& reason)
 {
-	std::string line(packet + "\r\n");
-	std::cout << "-> " << packet << std::endl;
+	cerr << ft_red(reason) << endl;
+	this->onDisconnect();
+}
+
+void	Client::write(const string& packet)
+{
+	string line(packet + "\r\n");
+	cout << "-> " << packet << endl;
 
 	if (send(this->socket.file, line.c_str(), line.length(), 0) == -1)
 		throw Exception(strerror(errno));
@@ -62,12 +71,14 @@ void	Client::write(const std::string& packet)
 
 void	Client::onConnect(void)
 {
-	std::cout << "Connected\n";
+	cout << "Connected\n";
 }
 
 void	Client::onDisconnect(void)
 {
-	std::cout << "Disconnected\n";
+	cout << "Disconnected\n";
+	for (size_t i = 0; i < this->channels.size(); i++)
+		this->global.channels[this->channels[i]];
 	ft_vecrem(this->global.clients, this);
 	close(this->socket.file);
 	delete this;
@@ -92,7 +103,7 @@ void	Client::onRegisterPacket(const t_packet& packet)
 	{
 		if (packet.args.size() != 2)
 			throw Exception("Invalid NICK packet");
-		std::string nickname = packet.args[1];
+		string nickname = packet.args[1];
 		for (size_t i = 0; i < this->global.clients.size(); i++)
 			if (this->global.clients[i]->nickname == nickname)
 				throw Exception("This nickname already exists");
@@ -126,13 +137,14 @@ void	Client::onRegisterPacket(const t_packet& packet)
 
 void	Client::onChannelMessagePacket(const t_packet& packet)
 {
-	if (!ft_setexists(this->channels, packet.args[1]))
+	
+	if (!ft_vecexists(this->channels, packet.args[1]))
 		throw Exception("User is not in channel");
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 	{
 		if (this->global.clients[i] == this)
 			continue ;
-		if (!ft_setexists(this->global.clients[i]->channels, packet.args[1]))
+		if (!ft_vecexists(this->global.clients[i]->channels, packet.args[1]))
 			continue ;
 		this->global.clients[i]->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
 	}
@@ -152,6 +164,8 @@ void	Client::onPrivateMessagePacket(const t_packet& packet)
 
 void	Client::onNoticePacket(const t_packet& packet)
 {
+	if (packet.args.size() != 2)
+		throw Exception("Invalid NOTICE packet");
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 	{
 		if (this->global.clients[i] == this)
@@ -162,83 +176,160 @@ void	Client::onNoticePacket(const t_packet& packet)
 	}
 }
 
+void	Client::onJoinPacket(const t_packet& packet)
+{
+	if (packet.args.size() != 2)
+		throw Exception("Invalid JOIN packet");
+	Channel* channel = Channel::findOrCreate(this->global, packet.args[1]);
+	channel->clients.push_back(this);
+	this->channels.push_back(packet.args[1]);
+}
+
+void	Client::onQuitPacket(const t_packet& packet)
+{
+	(void)packet;
+	// TODO: afficher le message
+	this->onDisconnect();
+}
+
+void	Client::onNickPacket(const t_packet& packet)
+{
+	if (packet.args.size() != 2)
+		throw Exception("Invalid NICK packet");
+	string nickname = packet.args[1];
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+		if (this->global.clients[i]->nickname == nickname)
+			throw Exception("This nickname already exists");
+	this->nickname = nickname;
+}
+
+void	Client::onOperPacket(const t_packet& packet)
+{
+	if (packet.args.size() != 3)
+		throw Exception("Invalid OPER packet");
+	if (packet.args[2] != this->global.params.password)
+		throw Exception("Invalid password");
+	this->opped = true;
+}
+
+void	Client::onKickPacket(const t_packet& packet)
+{
+	if (packet.args.size() != 3)
+		throw Exception("Invalid KICK packet");
+	if (!this->opped)
+		throw Exception("Not operator");
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+	{
+		if (this->global.clients[i]->nickname != packet.args[2])
+			continue ;
+		if (!ft_vecexists(this->global.clients[i]->channels, packet.args[1]))
+			throw Exception("Channel doesn't exist");
+		ft_vecrem(this->global.clients[i]->channels, packet.args[1]);
+		this->global.clients[i]->write(":" + this->nickname + " KICK " + packet.args[1] + " " + packet.args[2] + " :" + packet.rest);
+		return ;
+	}
+	throw Exception("Unknown nickname or channel");
+}
+
+void	Client::onModePacket(const t_packet& packet)
+{
+	if (packet.args.size() < 3 || packet.args.size() > 4)
+		throw Exception("Invalid MODE packet");
+	if (!this->opped)
+		throw Exception("Not operator");
+	if (packet.args[1] == "*")
+		return ;
+	Channel* channel = Channel::find(this->global, packet.args[1]);
+	if (!channel)
+		throw Exception("Channel doesn't exists");
+
+	if (channel->pass.empty())
+	{
+		if (packet.args[2] == "+i")
+		{
+			if (packet.args.size() != 3)
+				throw Exception("Invalid MODE packet");
+			channel->inviteonly = true;
+			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +ni");
+		}
+		if (packet.args[2] == "-i")
+		{
+			if (packet.args.size() != 3)
+				throw Exception("Invalid MODE packet");
+			channel->inviteonly = false;
+			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +n");
+		}
+		if (packet.args[2] == "+k")
+		{
+			if (packet.args.size() != 4)
+				throw Exception("Invalid MODE packet");
+			channel->pass = packet.args[3];
+			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nki");
+		}
+	}
+	else
+	{
+		if (packet.args[2] == "+i")
+		{
+			if (packet.args.size() != 3)
+				throw Exception("Invalid MODE packet");
+			channel->inviteonly = true;
+			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nki");
+		}
+		if (packet.args[2] == "-i")
+		{
+			if (packet.args.size() != 3)
+				throw Exception("Invalid MODE packet");
+			channel->inviteonly = false;
+			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nk");
+		}
+		if (packet.args[2] == "-k")
+		{
+			if (packet.args.size() != 3)
+				throw Exception("Invalid MODE packet");
+			channel->pass.erase();
+			if (!channel->inviteonly)
+				this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +n");
+			else
+				this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +ni");
+		}
+	}
+}
+
 void	Client::onRegularPacket(const t_packet& packet)
 {
-	std::cout << packet.raw << std::endl;
+	cout << "<- " << packet.raw << endl;
 	
 	if (packet.args[0] == "QUIT")
-	{
-		this->onDisconnect();
-		return ;
-	}
+		return (this->onQuitPacket(packet));
 
 	if (packet.args[0] == "JOIN")
-	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid JOIN packet");
-		this->channels.insert(packet.args[1]);
-		return ;
-	}
+		return (this->onJoinPacket(packet));
+
+	if (packet.args[0] == "NOTICE")
+		return (this->onNoticePacket(packet));
+
+	if (packet.args[0] == "NICK")
+		return (this->onNickPacket(packet));
+
+	if (packet.args[0] == "OPER")
+		return (this->onOperPacket(packet));
+
+	if (packet.args[0] == "MODE")
+		return (this->onModePacket(packet));
 
 	if (packet.args[0] == "PRIVMSG")
 	{
 		if (packet.args.size() != 2)
 			throw Exception("Invalid PRIVMSG packet");
 		if (packet.args[1].rfind("#", 0) == 0)
-			this->onChannelMessagePacket(packet);
+			return (this->onChannelMessagePacket(packet));
 		else
-			this->onPrivateMessagePacket(packet);
-		return ;
-	}
-
-	if (packet.args[0] == "NOTICE")
-	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid NOTICE packet");
-		this->onNoticePacket(packet);
-		return ;
-	}
-
-	if (packet.args[0] == "NICK")
-	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid NICK packet");
-		std::string nickname = packet.args[1];
-		for (size_t i = 0; i < this->global.clients.size(); i++)
-			if (this->global.clients[i]->nickname == nickname)
-				throw Exception("This nickname already exists");
-		this->nickname = nickname;
-		return ;
-	}
-
-	if (packet.args[0] == "OPER")
-	{
-		if (packet.args.size() != 3)
-			throw Exception("Invalid OPER packet");
-		if (packet.args[2] != this->global.params.password)
-			throw Exception("Invalid password");
-		this->opped = true;
-		return ;
+			return (this->onPrivateMessagePacket(packet));
 	}
 
 	if (packet.args[0] == "KICK")
-	{
-		if (packet.args.size() != 3)
-			throw Exception("Invalid KICK packet");
-		if (!this->opped)
-			throw Exception("Not operator");
-		for (size_t i = 0; i < this->global.clients.size(); i++)
-		{
-			if (this->global.clients[i]->nickname != packet.args[2])
-				continue ;
-			if (!ft_setexists(this->global.clients[i]->channels, packet.args[1]))
-				throw Exception("");
-			this->global.clients[i]->channels.erase(packet.args[1]);
-			this->global.clients[i]->write(":" + this->nickname + " KICK " + packet.args[1] + " " + packet.args[2] + " :" + packet.rest);
-			return ;
-		}
-		throw Exception("Unknown nickname or channel");
-	}
+		return (this->onKickPacket(packet));
 
 	if (packet.args[0] == "INVITE")
 	{
@@ -256,6 +347,43 @@ void	Client::onRegularPacket(const t_packet& packet)
 		throw Exception("Unknown nickname"); 
 	}
 
+	//MODE #chan +k admin -> 4
+
+	// 	<- OPER admin admin
+	// -> :bbb!hgicquel@localhost 381 bbb :You are now an IRC operator
+	// -> :bbb!hgicquel@localhost 221 bbb +wio
+	// <- MODE #lol +k
+	// -> :bbb!hgicquel@localhost 461 bbb MODE :Not enough parameters
+	// -> :bbb!hgicquel@localhost 324 bbb #lol +n 
+	// <- MODE #lol +k admin
+	// -> PING bbb
+	// -> :bbb!hgicquel@localhost 324 bbb #lol +nk admin 
+	// <- PONG :bbb
+	// <- MODE #lol -k admin
+	// -> :bbb!hgicquel@localhost 324 bbb #lol +n 
+
+	// <- MODE #lol +i
+	// -> :bbb!hgicquel@localhost 324 bbb #lol +ni 
+	// <- MODE #lol -i
+	// -> PING bbb
+	// -> :bbb!hgicquel@localhost 324 bbb #lol +n 
+	// <- PONG :bbb
+	// -> :aaa!hgicquel@localhost JOIN :#lol
+	// <- PING bbb
+	// -> :bbb!hgicquel@localhost PONG :bbb
+
+
+//mode #channel +i -> rend le channel invite only (peut etre rejoint only si t'as ete invited)
+//mode #channel -i -> unset l'invite only mode
+//mode #channel +k -> set a channel key (password)
+//mode #channel -k -> unset a channel key (password)
+
+
+//mode #channel +o nick -> add to the operator list
+//mode #channel -o nick -> remove list operator
+//mode #channel +b nick
+
+
 	if (packet.args[0] == "TIME")
 	{
 		if (packet.args.size() != 2)
@@ -270,7 +398,7 @@ void	Client::onRegularPacket(const t_packet& packet)
 			throw Exception("Invalid INFO packet");
 		this->write("371 :");
 		this->write("374 :ENDOFINFO");
-			return ;
+		return ;
 	}
 
 	if (packet.args[0] == "ADMIN")
@@ -289,27 +417,15 @@ void	Client::onRegularPacket(const t_packet& packet)
 			return ;
 	}
 
-	/*
-///mode #channel +b nick
-	if (packet.args[0] == "MODE")
-	{
-		if (packet.args.size() < 3 || packet.args.size() > 4)
-			throw Exception("Invalid MODE packet");
-		if (packet.args[1].rfind("#", 0) == 0)
-		{
-
-		}
-	}
-	*/
 
 }
 
 void	Client::motd(void)
 {
-	std::ifstream file(std::string("motd.txt").c_str(), std::ios::binary);
+	ifstream file(string("motd.txt").c_str(), ios::binary);
 	if (!file)
 		throw Exception("MOTD not found");
-	std::stringstream buffer;
+	stringstream buffer;
 	buffer << file.rdbuf();
 }
 
@@ -326,7 +442,7 @@ void	Client::onPacket(const t_packet& packet)
 			return ;
 		if (!this->steps.user)
 			return ;
-		std::cout << "Registered" << std::endl;
+		cout << "Registered" << endl;
 		this->state = REGISTERED;
 		this->write("001 * :Hello world!");
 		this->motd();

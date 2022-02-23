@@ -10,6 +10,8 @@
 #include "global.hpp"
 #include "client.hpp"
 
+using namespace std;
+
 /**
  * @brief polling loop
  * 
@@ -18,7 +20,7 @@
 void	ft_poll(t_global& global)
 {
 	fd_set		pollset;
-	std::string	packet;
+	string	packet;
 
 	while (true) 
 	{
@@ -50,11 +52,16 @@ void	ft_poll(t_global& global)
 				break ;
 			}
 			try {
-				std::vector<std::string> v = ft_split(packet);
+				vector<string> v = ft_split(packet);
 				for (size_t j = 0; j < v.size(); j++)
 					global.clients[i]->onPacket(ft_unpack(v[j]));
-			} catch (std::exception& e){
-				std::cerr << ft_red(e.what()) << std::endl;
+			} catch (exception& e){
+				if (Error* e2 = dynamic_cast<Error*>(&e))
+					global.clients[i]->write(e.what());
+				else if (Exception* e2 = dynamic_cast<Exception*>(&e))
+					global.clients[i]->disconnect(e.what());
+				else
+					throw e;
 			}
 			break ;
 		}

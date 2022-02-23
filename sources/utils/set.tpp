@@ -14,5 +14,5 @@
 template <typename T>
 bool	ft_setexists(std::set<T> s, T x)
 {
-	return (s.find(x) == s.end());
+	return (std::find(s.begin(), s.end(), x) != s.end());
 }

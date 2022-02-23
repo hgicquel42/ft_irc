@@ -35,7 +35,6 @@ class Client
 		std::string	username;
 		std::string	hostname;
 
-		std::string				channel;
 		std::set<std::string>	channels;
 		bool					opped;
 

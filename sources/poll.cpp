@@ -47,7 +47,6 @@ void	ft_poll(t_global& global)
 			if (!ft_sread(global.clients[i]->socket, packet))
 			{
 				global.clients[i]->onDisconnect();
-				delete global.clients[i];
 				break ;
 			}
 			try {

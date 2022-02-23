@@ -1,3 +1,5 @@
+#include "errors.hpp"
+
 #include "utils/format.hpp"
 
 #include "client.hpp"
@@ -57,7 +59,7 @@ string	ERR_USERNOTINCHANNEL(const Client* client, const Client* target, const Ch
 	args.push_back(target->nickname);
 	args.push_back(channel->name);
 	args.push_back("They aren't on that channel");
-	return (ft_format("441 %s %s :%s", args));
+	return (ft_format("441 %s %s %s :%s", args));
 }
 
 string	ERR_NEEDMOREPARAMS(const Client* client, const t_packet& packet)
@@ -74,7 +76,7 @@ string	ERR_PASSWDMISMATCH(const Client* client)
 	vector<string> args;
 	args.push_back(client->nickname);
 	args.push_back("Password incorrect");
-	return (ft_format("464 %s %s :%s", args));
+	return (ft_format("464 %s :%s", args));
 }
 
 string	ERR_INVITEONLYCHAN(const Client* client, const Channel *channel)

@@ -8,7 +8,7 @@ class Channel;
 
 #include "utils/sockets.hpp"
 
-#include "numerics.hpp"
+#include "errors.hpp"
 #include "channel.hpp"
 #include "client.hpp"
 #include "params.hpp"

@@ -14,7 +14,6 @@ using namespace std;
  */
 string ft_strpop(const string s)
 {
-	cout << s.size() << endl;
 	return (s.substr(0, s.size() - 1));
 }
 

@@ -17,7 +17,8 @@
 
 #include "global.hpp"
 #include "channel.hpp"
-#include "numerics.hpp"
+#include "errors.hpp"
+#include "replies.hpp"
 
 using namespace std;
 
@@ -129,7 +130,7 @@ void	Client::onRegisterPacket(const t_packet& packet)
 		if (packet.args.size() < 4)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		this->username = packet.args[1];
-		this->hostname = packet.args[2];
+		this->hostname = packet.args[3];
 		this->realname = packet.rest;
 
 		this->steps.user = true;
@@ -225,7 +226,6 @@ void	Client::onOperPacket(const t_packet& packet)
 	if (packet.args[2] != this->global.params.password)
 		throw Numeric(ERR_PASSWDMISMATCH(this));
 	this->opped = true;
-	cout << "lol" << endl;
 }
 
 void	Client::onInvitePacket(const t_packet& packet)
@@ -366,7 +366,7 @@ void	Client::onRegularPacket(const t_packet& packet)
 		if (packet.args.size() < 2)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		this->write(":" + this->nickname + " ADMIN " + "127.0.0.1");
-			return ;
+		return ;
 	}
 
 	if (packet.args[0] == "VERSION")
@@ -382,15 +382,20 @@ void	Client::onRegularPacket(const t_packet& packet)
 
 void	Client::motd(void)
 {
-	ifstream file(string("motd.txt").c_str(), ios::binary);
+	ifstream file("motd.txt");
 	if (!file)
 		throw Exception("MOTD not found");
-	stringstream buffer;
-	buffer << file.rdbuf();
+
+	this->write(RPL_MOTDSTART(this, "Chadland"));
+	for (string line; getline(file, line);)
+		this->write(RPL_MOTD(this, line));
+	this->write(RPL_ENDOFMOTD(this));
 }
 
 void	Client::onPacket(const t_packet& packet)
 {
+	if (packet.args.size() == 0)
+		return ;
 	if (packet.args[0] == "PING")
 		return ;
 
@@ -405,9 +410,9 @@ void	Client::onPacket(const t_packet& packet)
 			return ;
 		if (!this->steps.user)
 			return ;
-		cout << "Registered" << endl;
 		this->state = REGISTERED;
-		this->write("001 * :Hello world!");
+		this->write(RPL_WELCOME(this, "Chadnet"));
+		this->write(RPL_YOURHOST(this));
 		this->motd();
 		return ;
 	}

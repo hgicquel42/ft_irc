@@ -277,8 +277,8 @@ void	Client::onModePacket(const t_packet& packet)
 {
 	if (packet.args.size() < 3)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	if (packet.args[1] == "*")
-		throw Numeric(ERR_UNKNOWNCOMMAND(this, packet));
+	if (packet.args[1].rfind("#", 0) != 0)
+		return ;
 	Channel* channel = Channel::find(this->global, packet.args[1]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
@@ -286,7 +286,10 @@ void	Client::onModePacket(const t_packet& packet)
 		throw Numeric(ERR_CHANOPRIVSNEEDED(this, channel));
 
 	if (packet.args[2] == "+i")
+	{
 		channel->invite = true;
+		channel->closed = true;
+	}
 
 	if (packet.args[2] == "-i")
 		channel->invite = false;
@@ -296,6 +299,7 @@ void	Client::onModePacket(const t_packet& packet)
 		if (packet.args.size() < 4)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		channel->password = packet.args[3];
+		channel->closed = true;
 	}
 
 	if (packet.args[2] == "-k")

@@ -16,11 +16,12 @@ class Channel
 
 	public:
 		string	name;
-		string	pass;
-		bool	inviteonly;
-		bool	passonly;
+		string	password;
+		bool	invite;
+		bool	closed;
 
 		vector<Client*>	clients;
+		vector<string>	invites;
 		
 		Channel(const string& name);
 		Channel(const Channel& from);

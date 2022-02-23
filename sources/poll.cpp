@@ -44,22 +44,23 @@ void	ft_poll(t_global& global)
 
 		for (size_t i = 0; i < global.clients.size(); i++)
 		{
-			if (!FD_ISSET(global.clients[i]->socket.file, &pollset))
+			Client* client = global.clients[i];
+			if (!FD_ISSET(client->socket.file, &pollset))
 				continue ;
-			if (!ft_sread(global.clients[i]->socket, packet))
+			if (!ft_sread(client->socket, packet))
 			{
-				global.clients[i]->onDisconnect();
+				client->onDisconnect();
 				break ;
 			}
 			try {
-				vector<string> v = ft_split(packet);
-				for (size_t j = 0; j < v.size(); j++)
-					global.clients[i]->onPacket(ft_unpack(v[j]));
+				vector<string> packets = ft_split(packet);
+				for (size_t j = 0; j < packets.size(); j++)
+					client->onPacket(ft_unpack(packets[j]));
 			} catch (exception& e){
-				if (Error* e2 = dynamic_cast<Error*>(&e))
-					global.clients[i]->write(e.what());
+				if (Numeric* e2 = dynamic_cast<Numeric*>(&e))
+					client->write(e.what());
 				else if (Exception* e2 = dynamic_cast<Exception*>(&e))
-					global.clients[i]->disconnect(e.what());
+					cerr << ft_red(e.what()) << endl;
 				else
 					throw e;
 			}

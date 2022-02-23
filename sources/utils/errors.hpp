@@ -14,13 +14,13 @@ class Exception: public exception
 		virtual const char* what() const throw();
 };
 
-class Error: public exception
+class Numeric: public exception
 {
 	private:
 		string	msg;
 	public:
-		Error(string msg) throw();
-		~Error(void) throw();
+		Numeric(string msg) throw();
+		~Numeric(void) throw();
 		virtual const char* what() const throw();
 };
 

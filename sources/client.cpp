@@ -17,6 +17,7 @@
 
 #include "global.hpp"
 #include "channel.hpp"
+#include "numerics.hpp"
 
 using namespace std;
 
@@ -30,7 +31,13 @@ Client::Client(t_global& global, t_socket socket):
 Client::Client(const Client& from):
 	global(from.global),
 	socket(from.socket),
+	steps(from.steps),
 	state(from.state),
+	nickname(from.nickname),
+	realname(from.realname),
+	username(from.username),
+	hostname(from.hostname),
+	channels(from.channels),
 	opped(from.opped)
 {}
 
@@ -45,19 +52,13 @@ Client&	Client::operator=(const Client& from)
 	this->socket = from.socket;
 	this->state = from.state;
 	this->steps = from.steps;
+	this->opped = from.opped;
 	this->nickname = from.nickname;
 	this->username = from.username;
 	this->hostname = from.hostname;
 	this->realname = from.realname;
-	this->opped = from.opped;
 	this->channels = from.channels;
 	return (*this);
-}
-
-void	Client::disconnect(const string& reason)
-{
-	cerr << ft_red(reason) << endl;
-	this->onDisconnect();
 }
 
 void	Client::write(const string& packet)
@@ -77,8 +78,9 @@ void	Client::onConnect(void)
 void	Client::onDisconnect(void)
 {
 	cout << "Disconnected\n";
+
 	for (size_t i = 0; i < this->channels.size(); i++)
-		this->global.channels[this->channels[i]];
+		ft_vecrem(this->global.channels[this->channels[i]]->clients, this);
 	ft_vecrem(this->global.clients, this);
 	close(this->socket.file);
 	delete this;
@@ -101,12 +103,12 @@ void	Client::onRegisterPacket(const t_packet& packet)
 
 	if (packet.args[0] == "NICK")
 	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid NICK packet");
+		if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		string nickname = packet.args[1];
 		for (size_t i = 0; i < this->global.clients.size(); i++)
 			if (this->global.clients[i]->nickname == nickname)
-				throw Exception("This nickname already exists");
+				throw Numeric(ERR_NICKNAMEINUSE(this, nickname));
 		this->nickname = nickname;
 		this->steps.nick = true;
 		return ;
@@ -114,16 +116,18 @@ void	Client::onRegisterPacket(const t_packet& packet)
 	
 	if (packet.args[0] == "PASS")
 	{
+		if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		if (packet.args[1] != this->global.params.password)
-			throw Exception("Invalid PASS packet");
+			throw Numeric(ERR_PASSWDMISMATCH(this));
 		this->steps.pass = true;
 		return ;
 	}
 
 	if (packet.args[0] == "USER")
 	{
-		if (packet.args.size() != 4)
-			throw Exception("Invalid USER packet");
+		if (packet.args.size() < 4)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		this->username = packet.args[1];
 		this->hostname = packet.args[2];
 		this->realname = packet.rest;
@@ -132,21 +136,22 @@ void	Client::onRegisterPacket(const t_packet& packet)
 		return ;
 	}
 
-	throw Exception("Unknown packet");
+	throw Numeric(ERR_UNKNOWNCOMMAND(this, packet));
 }
 
 void	Client::onChannelMessagePacket(const t_packet& packet)
 {
-	
-	if (!ft_vecexists(this->channels, packet.args[1]))
-		throw Exception("User is not in channel");
-	for (size_t i = 0; i < this->global.clients.size(); i++)
+	Channel* channel = Channel::find(this->global, packet.args[1]);
+	if (!channel)
+		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
+	if (channel->closed && !ft_vecexists(channel->clients, this))
+		throw Numeric(ERR_CANNOTSENDTOCHAN(this, channel));
+	for (size_t i = 0; i < channel->clients.size(); i++)
 	{
-		if (this->global.clients[i] == this)
+		Client* client = channel->clients[i];
+		if (client == this)
 			continue ;
-		if (!ft_vecexists(this->global.clients[i]->channels, packet.args[1]))
-			continue ;
-		this->global.clients[i]->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
+		client->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
 	}
 }
 
@@ -154,35 +159,45 @@ void	Client::onPrivateMessagePacket(const t_packet& packet)
 {
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 	{
-		if (this->global.clients[i] == this)
+		Client* client = this->global.clients[i];
+		if (client->nickname != packet.args[1])
 			continue ;
-		if (this->global.clients[i]->nickname != packet.args[1])
-			continue ;
-		this->global.clients[i]->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
+		if (client == this)
+			break ;
+		client->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
 	}
+	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
 }
 
 void	Client::onNoticePacket(const t_packet& packet)
 {
-	if (packet.args.size() != 2)
-		throw Exception("Invalid NOTICE packet");
+	if (packet.args.size() < 2)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 	{
-		if (this->global.clients[i] == this)
+		Client* client = this->global.clients[i];
+		if (client->nickname != packet.args[1])
 			continue ;
-		if (this->global.clients[i]->nickname != packet.args[1])
-			continue ;
-		this->global.clients[i]->write(":" + this->nickname + " NOTICE " + packet.args[1] + " :" + packet.rest);
+		if (client == this)
+			break ;
+		client->write(":" + this->nickname + " NOTICE " + packet.args[1] + " :" + packet.rest);
 	}
+	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
 }
 
 void	Client::onJoinPacket(const t_packet& packet)
 {
-	if (packet.args.size() != 2)
-		throw Exception("Invalid JOIN packet");
+	if (packet.args.size() < 2)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 	Channel* channel = Channel::findOrCreate(this->global, packet.args[1]);
+	if (channel->invite)
+		if (!ft_vecexists(channel->invites, this->nickname))
+			throw Numeric(ERR_INVITEONLYCHAN(this, channel));
+	if (!channel->password.empty())
+		if (packet.args[2] != channel->password)
+			throw Numeric(ERR_BADCHANNELKEY(this, channel));
 	channel->clients.push_back(this);
-	this->channels.push_back(packet.args[1]);
+	this->channels.push_back(channel->name);
 }
 
 void	Client::onQuitPacket(const t_packet& packet)
@@ -194,106 +209,108 @@ void	Client::onQuitPacket(const t_packet& packet)
 
 void	Client::onNickPacket(const t_packet& packet)
 {
-	if (packet.args.size() != 2)
-		throw Exception("Invalid NICK packet");
+	if (packet.args.size() < 2)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 	string nickname = packet.args[1];
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 		if (this->global.clients[i]->nickname == nickname)
-			throw Exception("This nickname already exists");
+			throw Numeric(ERR_NICKNAMEINUSE(this, nickname));
 	this->nickname = nickname;
 }
 
 void	Client::onOperPacket(const t_packet& packet)
 {
-	if (packet.args.size() != 3)
-		throw Exception("Invalid OPER packet");
+	if (packet.args.size() < 3)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 	if (packet.args[2] != this->global.params.password)
-		throw Exception("Invalid password");
+		throw Numeric(ERR_PASSWDMISMATCH(this));
 	this->opped = true;
+	cout << "lol" << endl;
+}
+
+void	Client::onInvitePacket(const t_packet& packet)
+{
+	if (packet.args.size() < 3)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+	Channel* channel = Channel::find(this->global, packet.args[2]);
+	if (!channel)
+		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[2]));
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+	{
+		Client* client = this->global.clients[i];
+		if (client->nickname != packet.args[1])
+			continue;
+		if (client == this)
+			break ;
+		channel->invites.push_back(client->nickname);
+		client->write(":" + this->nickname + " INVITE " + client->nickname + " " + channel->name);
+		return ;
+	}
+	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1])); 
 }
 
 void	Client::onKickPacket(const t_packet& packet)
 {
-	if (packet.args.size() != 3)
-		throw Exception("Invalid KICK packet");
+	if (packet.args.size() < 3)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+	Channel* channel = Channel::find(this->global, packet.args[1]);
+	if (!channel)
+		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
 	if (!this->opped)
-		throw Exception("Not operator");
-	for (size_t i = 0; i < this->global.clients.size(); i++)
+		throw Numeric(ERR_CHANOPRIVSNEEDED(this, channel));
+	for (size_t i = 0; i < channel->clients.size(); i++)
 	{
-		if (this->global.clients[i]->nickname != packet.args[2])
+		Client* client = channel->clients[i];
+		if (client->nickname != packet.args[2])
 			continue ;
-		if (!ft_vecexists(this->global.clients[i]->channels, packet.args[1]))
-			throw Exception("Channel doesn't exist");
-		ft_vecrem(this->global.clients[i]->channels, packet.args[1]);
-		this->global.clients[i]->write(":" + this->nickname + " KICK " + packet.args[1] + " " + packet.args[2] + " :" + packet.rest);
+		if (!ft_vecexists(client->channels, channel->name))
+			throw Numeric(ERR_USERNOTINCHANNEL(this, client, channel));
+		ft_vecrem(channel->clients, client);
+		ft_vecrem(client->channels, channel->name);
+		client->write(":" + this->nickname + " KICK " + packet.args[1] + " " + packet.args[2] + " :" + packet.rest);
 		return ;
 	}
-	throw Exception("Unknown nickname or channel");
+	throw Numeric(ERR_NOSUCHNICK(this, packet.args[2]));
 }
 
 void	Client::onModePacket(const t_packet& packet)
 {
-	if (packet.args.size() < 3 || packet.args.size() > 4)
-		throw Exception("Invalid MODE packet");
-	if (!this->opped)
-		throw Exception("Not operator");
+	if (packet.args.size() < 3)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 	if (packet.args[1] == "*")
-		return ;
+		throw Numeric(ERR_UNKNOWNCOMMAND(this, packet));
 	Channel* channel = Channel::find(this->global, packet.args[1]);
 	if (!channel)
-		throw Exception("Channel doesn't exists");
+		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
+	if (!this->opped)
+		throw Numeric(ERR_CHANOPRIVSNEEDED(this, channel));
 
-	if (channel->pass.empty())
+	if (packet.args[2] == "+i")
+		channel->invite = true;
+
+	if (packet.args[2] == "-i")
+		channel->invite = false;
+
+	if (packet.args[2] == "+k")
 	{
-		if (packet.args[2] == "+i")
-		{
-			if (packet.args.size() != 3)
-				throw Exception("Invalid MODE packet");
-			channel->inviteonly = true;
+		if (packet.args.size() < 4)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+		channel->password = packet.args[3];
+	}
+
+	if (packet.args[2] == "-k")
+		channel->password.erase();
+
+	if (channel->password.empty())
+		if (channel->invite)
 			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +ni");
-		}
-		if (packet.args[2] == "-i")
-		{
-			if (packet.args.size() != 3)
-				throw Exception("Invalid MODE packet");
-			channel->inviteonly = false;
+		else
 			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +n");
-		}
-		if (packet.args[2] == "+k")
-		{
-			if (packet.args.size() != 4)
-				throw Exception("Invalid MODE packet");
-			channel->pass = packet.args[3];
-			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nki");
-		}
-	}
 	else
-	{
-		if (packet.args[2] == "+i")
-		{
-			if (packet.args.size() != 3)
-				throw Exception("Invalid MODE packet");
-			channel->inviteonly = true;
+		if (channel->invite)
 			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nki");
-		}
-		if (packet.args[2] == "-i")
-		{
-			if (packet.args.size() != 3)
-				throw Exception("Invalid MODE packet");
-			channel->inviteonly = false;
+		else
 			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nk");
-		}
-		if (packet.args[2] == "-k")
-		{
-			if (packet.args.size() != 3)
-				throw Exception("Invalid MODE packet");
-			channel->pass.erase();
-			if (!channel->inviteonly)
-				this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +n");
-			else
-				this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +ni");
-		}
-	}
 }
 
 void	Client::onRegularPacket(const t_packet& packet)
@@ -302,122 +319,65 @@ void	Client::onRegularPacket(const t_packet& packet)
 	
 	if (packet.args[0] == "QUIT")
 		return (this->onQuitPacket(packet));
-
 	if (packet.args[0] == "JOIN")
 		return (this->onJoinPacket(packet));
-
 	if (packet.args[0] == "NOTICE")
 		return (this->onNoticePacket(packet));
-
 	if (packet.args[0] == "NICK")
 		return (this->onNickPacket(packet));
-
 	if (packet.args[0] == "OPER")
 		return (this->onOperPacket(packet));
-
 	if (packet.args[0] == "MODE")
 		return (this->onModePacket(packet));
+	if (packet.args[0] == "KICK")
+		return (this->onKickPacket(packet));
+	if (packet.args[0] == "INVITE")
+		return (this->onInvitePacket(packet));
 
 	if (packet.args[0] == "PRIVMSG")
 	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid PRIVMSG packet");
+		if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		if (packet.args[1].rfind("#", 0) == 0)
 			return (this->onChannelMessagePacket(packet));
 		else
 			return (this->onPrivateMessagePacket(packet));
 	}
 
-	if (packet.args[0] == "KICK")
-		return (this->onKickPacket(packet));
-
-	if (packet.args[0] == "INVITE")
-	{
-		if (packet.args.size() != 3)
-			throw Exception("Invalid INVITE packet");
-		for (size_t i = 0; i < this->global.clients.size(); i++)
-		{
-			if (this->global.clients[i] == this)
-				continue ;
-			if (this->global.clients[i]->nickname != packet.args[1])
-				continue;
-			this->global.clients[i]->write(":" + this->nickname + " INVITE " + packet.args[1] + " " + packet.args[2]);
-			return ;
-		}
-		throw Exception("Unknown nickname"); 
-	}
-
-	//MODE #chan +k admin -> 4
-
-	// 	<- OPER admin admin
-	// -> :bbb!hgicquel@localhost 381 bbb :You are now an IRC operator
-	// -> :bbb!hgicquel@localhost 221 bbb +wio
-	// <- MODE #lol +k
-	// -> :bbb!hgicquel@localhost 461 bbb MODE :Not enough parameters
-	// -> :bbb!hgicquel@localhost 324 bbb #lol +n 
-	// <- MODE #lol +k admin
-	// -> PING bbb
-	// -> :bbb!hgicquel@localhost 324 bbb #lol +nk admin 
-	// <- PONG :bbb
-	// <- MODE #lol -k admin
-	// -> :bbb!hgicquel@localhost 324 bbb #lol +n 
-
-	// <- MODE #lol +i
-	// -> :bbb!hgicquel@localhost 324 bbb #lol +ni 
-	// <- MODE #lol -i
-	// -> PING bbb
-	// -> :bbb!hgicquel@localhost 324 bbb #lol +n 
-	// <- PONG :bbb
-	// -> :aaa!hgicquel@localhost JOIN :#lol
-	// <- PING bbb
-	// -> :bbb!hgicquel@localhost PONG :bbb
-
-
-//mode #channel +i -> rend le channel invite only (peut etre rejoint only si t'as ete invited)
-//mode #channel -i -> unset l'invite only mode
-//mode #channel +k -> set a channel key (password)
-//mode #channel -k -> unset a channel key (password)
-
-
-//mode #channel +o nick -> add to the operator list
-//mode #channel -o nick -> remove list operator
-//mode #channel +b nick
-
-
 	if (packet.args[0] == "TIME")
 	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid TIME packet");
+		if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		this->write(this->nickname + " TIME " + "127.0.0.1");
-			return ;
+		return ;
 	}
 
 	if (packet.args[0] == "INFO")
 	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid INFO packet");
-		this->write("371 :");
-		this->write("374 :ENDOFINFO");
+		if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+		this->write("371 :Hello world");
+		this->write("374 :End of info");
 		return ;
 	}
 
 	if (packet.args[0] == "ADMIN")
 	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid ADMIN packet");
+		if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		this->write(":" + this->nickname + " ADMIN " + "127.0.0.1");
 			return ;
 	}
 
 	if (packet.args[0] == "VERSION")
 	{
-		if (packet.args.size() != 2)
-			throw Exception("Invalid VERSION packet");
+		if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		this->write(":" + this->nickname + " VERSION " + "127.0.0.1");
-			return ;
+		return ;
 	}
 
-
+	throw Numeric(ERR_UNKNOWNCOMMAND(this, packet));
 }
 
 void	Client::motd(void)
@@ -431,6 +391,9 @@ void	Client::motd(void)
 
 void	Client::onPacket(const t_packet& packet)
 {
+	if (packet.args[0] == "PING")
+		return ;
+
 	if (this->state == REGISTERING)
 	{
 		this->onRegisterPacket(packet);
@@ -454,6 +417,4 @@ void	Client::onPacket(const t_packet& packet)
 		this->onRegularPacket(packet);
 		return ;
 	}
-
-	throw Exception("Invalid state");
 }

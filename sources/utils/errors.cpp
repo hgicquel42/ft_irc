@@ -14,14 +14,14 @@ const char *Exception::what(void) const throw()
 	return (this->msg.c_str());
 }
 
-Error::Error(string msg) throw():
+Numeric::Numeric(string msg) throw():
 	msg(msg)
 {}
 
-Error::~Error(void) throw()
+Numeric::~Numeric(void) throw()
 {}
 
-const char *Error::what(void) const throw()
+const char *Numeric::what(void) const throw()
 {
 	return (this->msg.c_str());
 }

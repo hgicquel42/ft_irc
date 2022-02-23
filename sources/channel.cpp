@@ -4,15 +4,17 @@ using namespace std;
 
 Channel::Channel(const string& name):
 	name(name),
-	inviteonly(false),
-	passonly(false)
+	invite(false),
+	closed(false)
 {}
 
 Channel::Channel(const Channel& from):
 	name(from.name),
-	pass(from.pass),
-	inviteonly(from.inviteonly),
-	passonly(from.passonly)
+	password(from.password),
+	invite(from.invite),
+	closed(from.closed),
+	clients(from.clients),
+	invites(from.invites)
 {}
 
 Channel::~Channel(void)
@@ -23,9 +25,11 @@ Channel&	Channel::operator=(const Channel& from)
 	if (this == &from)
 		return (*this);
 	this->name = from.name;
-	this->pass = from.pass;
-	this->inviteonly = from.inviteonly;
-	this->passonly = from.passonly;
+	this->password = from.password;
+	this->invite = from.invite;
+	this->closed = from.closed;
+	this->invites = from.invites;
+	this->clients = from.clients;
 	return (*this);
 }
 

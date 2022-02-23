@@ -8,10 +8,12 @@ FILES = \
 	utils/strings.cpp \
 	utils/sockets.cpp \
 	utils/packet.cpp \
+	utils/format.cpp \
 	params.cpp \
 	poll.cpp \
 	client.cpp \
 	channel.cpp \
+	numerics.cpp \
 	main.cpp \
 
 INPUT = ${addprefix sources/, ${FILES}}
@@ -22,10 +24,10 @@ all: ${NAME}
 
 objects/%.o: sources/%.cpp
 	@mkdir -p ${dir $@}
-	c++ -Wall -Wextra -Werror -std=c++98 -g -I sources -c $< -o $@
+	c++ -Wall -Wextra -Werror -std=c++98 -I sources -c $< -o $@
 
 ${NAME}: ${OUTPUT}
-	c++ -Wall -Wextra -Werror -std=c++98 -g -I sources ${OUTPUT} -o ${NAME}
+	c++ -Wall -Wextra -Werror -std=c++98 -I sources ${OUTPUT} -o ${NAME}
 
 clean:
 	rm -rf objects

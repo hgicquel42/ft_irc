@@ -5,6 +5,7 @@
 
 #include "utils/colors.hpp"
 #include "utils/sockets.hpp"
+#include "utils/format.hpp"
 
 #include "global.hpp"
 #include "params.hpp"

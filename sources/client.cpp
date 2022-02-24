@@ -344,10 +344,25 @@ void	Client::onListPacket(const t_packet& packet)
 	{
 		
 	}
-	else
-	{
 
+	if (packet.args.size() == 3)
+	{
+		
 	}
+}
+
+void	Client::onPartPacket(const t_packet& packet)
+{
+	if (packet.args.size() < 2)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+	
+	Channel* channel = Channel::find(this->global.channels, packet.args[1]);
+	if (!channel)
+		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
+	if (!ft_vecexists(channel->clients, this))
+		throw Numeric(ERR_NOTONCHANNEL(this, channel));
+	channel->kick(this);
+	this->write(PART(this, channel, packet.rest));
 }
 
 void	Client::onModePacket(const t_packet& packet)
@@ -443,7 +458,28 @@ void	Client::onModePacket(const t_packet& packet)
 		Client* target = Client::find(channel->clients, packet.args[3]);
 		if (!target)
 			throw Numeric(ERR_USERNOTINCHANNEL(this, target, channel));
+		for (size_t i = 0; i < channel->operlist.size(); i++)
+		{
+			if (channel->operlist[i] == packet.args[3])
+				return ;
+		}
 		channel->operlist.push_back(packet.args[3]);
+		return ;
+	}
+
+	if (packet.args[2] == "-o")
+	{
+		if (packet.args.size() < 4)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+		Client* target = Client::find(channel->clients, packet.args[3]);
+		if (!target)
+			throw Numeric(ERR_USERNOTINCHANNEL(this, target, channel));
+		for (size_t i = 0; i < channel->operlist.size(); i++)
+		{
+			if (channel->operlist[i] == packet.args[3])
+				channel->operlist[i].erase();
+		}
+		return ;
 	}
 }
 
@@ -469,6 +505,8 @@ void	Client::onRegularPacket(const t_packet& packet)
 		return (this->onMessagePacket(packet));
 	if (packet.args[0] == "LIST")
 		return (this->onListPacket(packet));
+	if (packet.args[0] == "PART")
+		return (this->onPartPacket(packet));
 
 	if (packet.args[0] == "TIME")
 	{

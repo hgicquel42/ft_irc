@@ -76,6 +76,15 @@ string	NICK(const Client* client, const string& nickname)
 	return (ft_format(":%s NICK %s", args));
 }
 
+string	PART(const Client* client, const Channel* channel, const string& reason)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	args.push_back(channel->name);
+	args.push_back(reason);
+	return (ft_format(":%s PART %s :%s", args));
+}
+
 string	RPL_WELCOME(const Client* client, const string& network)
 {
 	vector<string> args;

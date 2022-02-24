@@ -77,6 +77,7 @@ class Client
 		void	onInvitePacket(const t_packet& packet);
 		void	onKickPacket(const t_packet& packet);
 		void	onModePacket(const t_packet& packet);
+		void	onPartPacket(const t_packet& packet);
 
 		void	write(const string& raw);
 		void	motd(void);

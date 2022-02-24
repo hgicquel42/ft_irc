@@ -23,6 +23,8 @@ string	KICK(const Client* client, const Client* target, const Channel* channel);
 
 string	NICK(const Client* client, const string& nickname);
 
+string	PART(const Client* client, const Channel* channel, const string& reason);
+
 string	RPL_WELCOME(const Client* client, const string& network);
 
 string	RPL_YOURHOST(const Client* client);

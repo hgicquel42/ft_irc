@@ -69,6 +69,8 @@ bool	Channel::isname(const string& name)
 		return (false);
 	if (name.find(",") != string::npos)
 		return (false);
+	if (name.find(":") != string::npos)
+		return (false);
 	if (name.rfind("#", 0) == 0)
 		return (true);
 	if (name.rfind("&", 0) == 0)

@@ -14,7 +14,8 @@ Channel::Channel(const Channel& from):
 	invite(from.invite),
 	closed(from.closed),
 	clients(from.clients),
-	invites(from.invites)
+	invites(from.invites),
+	banlist(from.banlist)
 {}
 
 Channel::~Channel(void)
@@ -29,6 +30,7 @@ Channel&	Channel::operator=(const Channel& from)
 	this->invite = from.invite;
 	this->closed = from.closed;
 	this->invites = from.invites;
+	this->banlist = from.banlist;
 	this->clients = from.clients;
 	return (*this);
 }

@@ -396,7 +396,13 @@ void	Client::onModePacket(const t_packet& packet)
 	if (packet.args[2] == "-k")
 		channel->password.erase();
 
-	if (packet.args[2] == "-b")
+	if (packet.args[2] == "+b")
+	{
+		if (packet.args.size() < 4)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+		if (ft_vecexists(channel->banlist, packet.args[3]))
+			throw Numeric(ERR_BANNEDFROMCHAN(this, packet));
+	}
 		
 
 	this->write(RPL_CHANNELMODEIS(this, channel));

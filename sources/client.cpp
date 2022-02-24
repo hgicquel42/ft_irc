@@ -396,8 +396,8 @@ void	Client::onModePacket(const t_packet& packet)
 	if (packet.args[2] == "-k")
 		channel->password.erase();
 
-	if (packet.args[2] == "-b")
-		
+	//TODO : b, o, PART
+
 
 	this->write(RPL_CHANNELMODEIS(this, channel));
 }

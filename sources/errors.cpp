@@ -62,6 +62,11 @@ string	ERR_USERNOTINCHANNEL(const Client* client, const Client* target, const Ch
 	return (ft_format("441 %s %s %s :%s", args));
 }
 
+string	ERR_NOTONCHANNEL(const Client* client)
+{
+	
+}
+
 string	ERR_NEEDMOREPARAMS(const Client* client, const t_packet& packet)
 {
 	vector<string> args;

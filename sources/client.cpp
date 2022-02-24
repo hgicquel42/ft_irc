@@ -307,7 +307,7 @@ void	Client::onInvitePacket(const t_packet& packet)
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[2]));
 	if (!ft_vecexists(channel->clients, this))
-
+		// TODO ERR_NOTONCHANNEL (442)
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 	{
 		Client* client = this->global.clients[i];
@@ -395,6 +395,9 @@ void	Client::onModePacket(const t_packet& packet)
 
 	if (packet.args[2] == "-k")
 		channel->password.erase();
+
+	if (packet.args[2] == "-b")
+		
 
 	this->write(RPL_CHANNELMODEIS(this, channel));
 }

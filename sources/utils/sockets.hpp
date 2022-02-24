@@ -37,11 +37,9 @@ t_socket	ft_slisten(int port) throw(Exception);
 t_socket	ft_saccept(t_socket server) throw(Exception);
 
 /**
- * @brief securely read from socket
+ * @brief safely read socket
  * 
  * @param socket 
- * @param packet 
- * @return true 
- * @return false 
+ * @return string 
  */
-bool	ft_sread(t_socket socket, string& packet) throw(Exception);
+string	ft_sread(t_socket socket) throw(Exception);

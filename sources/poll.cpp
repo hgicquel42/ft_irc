@@ -20,7 +20,6 @@ using namespace std;
 void	ft_poll(t_global& global)
 {
 	fd_set		pollset;
-	string	packet;
 
 	while (true) 
 	{
@@ -48,13 +47,14 @@ void	ft_poll(t_global& global)
 			if (!FD_ISSET(client->socket.file, &pollset))
 				continue ;
 			// TODO buffer
-			if (!ft_sread(client->socket, packet))
+			string	buffer = ft_sread(client->socket);
+			if (buffer.empty())
 			{
 				client->onQuit("Connection lost");
 				break ;
 			}
 			try {
-				vector<string> packets = ft_split(packet);
+				vector<string> packets = ft_split(buffer);
 				for (size_t j = 0; j < packets.size(); j++)
 					client->onPacket(ft_unpack(packets[j]));
 			} catch (exception& e){

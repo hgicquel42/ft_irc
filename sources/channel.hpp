@@ -35,8 +35,6 @@ class Channel
 
 		Channel&	operator=(const Channel& from);
 
-		void	 	kick(Client* client);
-
 		static Channel* find(MChannels& channels, const string& name);
 
 		static Channel*	findOrCreate(MChannels& channels, const string& name);

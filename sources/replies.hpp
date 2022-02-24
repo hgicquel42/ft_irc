@@ -2,6 +2,7 @@
 
 #include "client.hpp"
 #include "channel.hpp"
+#include <sstream>
 
 using namespace std;
 
@@ -28,6 +29,12 @@ string	PART(const Client* client, const Channel* channel, const string& reason);
 string	RPL_WELCOME(const Client* client, const string& network);
 
 string	RPL_YOURHOST(const Client* client);
+
+string	RPL_LISTSTART(const Client* client);
+
+string	RPL_LIST(const Client* client, const Channel* channel);
+
+string	RPL_LISTEND(const Client* client);
 
 string	RPL_CHANNELMODEIS(const Client* client, const Channel* channel);
 

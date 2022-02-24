@@ -103,6 +103,32 @@ string	RPL_YOURHOST(const Client* client)
 	return (ft_format("002 %s :Your host is %s, running version %s", args));
 }
 
+string	RPL_LISTSTART(const Client* client)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	return (ft_format("321 %s Channel :Users  Name", args));
+}
+
+string	RPL_LIST(const Client* client, const Channel* channel)
+{
+	vector<string> args;
+	stringstream stream;
+
+	args.push_back(client->nickname);
+	args.push_back(channel->name);
+	stream << channel->clients.size();
+	args.push_back(stream.str());
+	return (ft_format("322 %s %s %s", args));
+}
+
+string	RPL_LISTEND(const Client* client)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	return (ft_format("323 %s :End of /LIST", args));
+}
+
 string	RPL_CHANNELMODEIS(const Client* client, const Channel* channel)
 {
 	vector<string> args;

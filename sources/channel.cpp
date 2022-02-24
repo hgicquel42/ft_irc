@@ -39,12 +39,6 @@ Channel&	Channel::operator=(const Channel& from)
 	return (*this);
 }
 
-void Channel::kick(Client* client)
-{
-	ft_vecrem(this->clients, client);
-	ft_vecrem(client->channels, this->name);
-}
-
 Channel* Channel::find(MChannels& channels, const string& name)
 {
 	MChannels::iterator it = channels.find(name);

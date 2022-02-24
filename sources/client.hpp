@@ -33,6 +33,8 @@ class Client
 
 	public:
 		t_socket	socket;
+		string		buffer;
+
 		t_steps		steps;
 		int			state;
 		

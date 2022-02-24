@@ -27,7 +27,12 @@ Client::Client(t_global& global, t_socket socket):
 	socket(socket),
 	state(REGISTERING),
 	opped(false)
-{}
+{
+	this->steps.caps = false;
+	this->steps.nick = false;
+	this->steps.pass = false;
+	this->steps.user = false;
+}
 
 Client::Client(const Client& from):
 	global(from.global),
@@ -335,6 +340,7 @@ void	Client::onKickPacket(const t_packet& packet)
 	ft_vecrem(channel->clients, client);
 	ft_vecrem(client->channels, channel->name);
 	this->write(KICK(this, client, channel));
+	client->write(PART(client, channel, "Kicked"));
 	return ;
 }
 
@@ -342,12 +348,21 @@ void	Client::onListPacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 	{
-		
+		this->write(RPL_LISTSTART(this));
+		MChannels::iterator it = this->global.channels.begin();
+		for (; it != this->global.channels.end(); it++)
+			this->write(RPL_LIST(this, it->second));	
+		this->write(RPL_LISTEND(this));
 	}
 
 	if (packet.args.size() == 3)
 	{
-		
+		Channel* channel = Channel::find(this->global.channels, packet.args[1]);
+		if (!channel)
+			throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
+		this->write(RPL_LISTSTART(this));
+		this->write(RPL_LIST(this, channel));
+		this->write(RPL_LISTEND(this));
 	}
 }
 
@@ -361,7 +376,8 @@ void	Client::onPartPacket(const t_packet& packet)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
 	if (!ft_vecexists(channel->clients, this))
 		throw Numeric(ERR_NOTONCHANNEL(this, channel));
-	channel->kick(this);
+	ft_vecrem(channel->clients, this);
+	ft_vecrem(this->channels, channel->name);
 	this->write(PART(this, channel, packet.rest));
 }
 
@@ -435,8 +451,11 @@ void	Client::onModePacket(const t_packet& packet)
 				return ;
 			channel->banlist.push_back(packet.args[3]);
 			Client* target = Client::find(channel->clients, packet.args[3]);
-			if (target)
-				channel->kick(target);
+			if (!target)
+				return ;
+			ft_vecrem(channel->clients, target);
+			ft_vecrem(target->channels, channel->name);
+			target->write(PART(target, channel, "Banned"));
 			return ;
 		}
 	}
@@ -455,14 +474,8 @@ void	Client::onModePacket(const t_packet& packet)
 	{
 		if (packet.args.size() < 4)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-		Client* target = Client::find(channel->clients, packet.args[3]);
-		if (!target)
-			throw Numeric(ERR_USERNOTINCHANNEL(this, target, channel));
-		for (size_t i = 0; i < channel->operlist.size(); i++)
-		{
-			if (channel->operlist[i] == packet.args[3])
-				return ;
-		}
+		if (ft_vecexists(channel->operlist, packet.args[3]))
+			return ;
 		channel->operlist.push_back(packet.args[3]);
 		return ;
 	}
@@ -471,14 +484,9 @@ void	Client::onModePacket(const t_packet& packet)
 	{
 		if (packet.args.size() < 4)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-		Client* target = Client::find(channel->clients, packet.args[3]);
-		if (!target)
-			throw Numeric(ERR_USERNOTINCHANNEL(this, target, channel));
-		for (size_t i = 0; i < channel->operlist.size(); i++)
-		{
-			if (channel->operlist[i] == packet.args[3])
-				channel->operlist[i].erase();
-		}
+		if (!ft_vecexists(channel->operlist, packet.args[3]))
+			return ;
+		ft_vecrem(channel->operlist, packet.args[3]);
 		return ;
 	}
 }

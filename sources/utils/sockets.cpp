@@ -54,22 +54,17 @@ t_socket	ft_saccept(t_socket server) throw(Exception)
 }
 
 /**
- * @brief securely read from socket
+ * @brief safely read socket
  * 
  * @param socket 
- * @param packet 
- * @return true 
- * @return false 
+ * @return string 
  */
-bool	ft_sread(t_socket socket, string& packet) throw(Exception)
+string	ft_sread(t_socket socket) throw(Exception)
 {
 	char buffer[1024] = {0};
 
 	int	n = read(socket.file, &buffer, 1024);
 	if (n == -1)
 		throw Exception("Could not read socket");
-	if (n == 0)
-		return (false);
-	packet = string(buffer, n);
-	return (true);
+	return (string(buffer, n));
 }

@@ -103,7 +103,7 @@ void	Client::onQuit(const string& reason)
 			throw Exception("Invalid channel");
 		for (size_t j = 0; j < channel->clients.size(); j++)
 		{
-			Client* client = channel->clients[i];
+			Client* client = channel->clients[j];
 			if (client == this)
 				continue ;
 			client->write(QUIT(this, reason));
@@ -347,6 +347,11 @@ void	Client::onModePacket(const t_packet& packet)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
 	if (!this->opped)
 		throw Numeric(ERR_CHANOPRIVSNEEDED(this, channel));
+
+	if (packet.args[2] == "+n")
+		channel->closed = true;
+	if (packet.args[2] == "-n")
+		channel->closed = false;
 
 	if (packet.args[2] == "+i")
 	{

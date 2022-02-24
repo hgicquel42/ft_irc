@@ -2,6 +2,13 @@
 
 #include "utils/format.hpp"
 
+string	PONG(const string& token)
+{
+	vector<string> args;
+	args.push_back(token);
+	return (ft_format("PONG %s", args));
+}
+
 string	ERROR(const string& reason)
 {
 	vector<string> args;

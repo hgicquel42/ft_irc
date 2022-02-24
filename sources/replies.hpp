@@ -5,6 +5,8 @@
 
 using namespace std;
 
+string	PONG(const string& token);
+
 string	ERROR(const string& reason);
 
 string	JOIN(const Client* client, const Channel* channel);

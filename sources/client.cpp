@@ -112,6 +112,13 @@ void	Client::onQuit(const string& reason)
 	this->onDisconnect();
 }
 
+void	Client::onPingPacket(const t_packet& packet)
+{
+	if (packet.args.size() < 2)
+		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+	this->write(PONG(packet.args[1]));
+}
+
 void	Client::onRegisterPacket(const t_packet& packet)
 {
 	if (packet.raw == "CAP LS")
@@ -340,6 +347,18 @@ void	Client::onKickPacket(const t_packet& packet)
 	throw Numeric(ERR_NOSUCHNICK(this, packet.args[2]));
 }
 
+void	Client::onListPacket(const t_packet& packet)
+{
+	if (packet.args.size() < 2)
+	{
+
+	}
+	else
+	{
+
+	}
+}
+
 void	Client::onModePacket(const t_packet& packet)
 {
 	if (packet.args.size() < 3)
@@ -400,6 +419,8 @@ void	Client::onRegularPacket(const t_packet& packet)
 		return (this->onInvitePacket(packet));
 	if (packet.args[0] == "PRIVMSG")
 		return (this->onMessagePacket(packet));
+	if (packet.args[0] == "LIST")
+		return (this->onListPacket(packet));
 
 	if (packet.args[0] == "TIME")
 	{
@@ -455,10 +476,10 @@ void	Client::onPacket(const t_packet& packet)
 
 	if (packet.args.size() == 0)
 		return ;
-	if (packet.args[0] == "PING")
-		return ;
 	if (packet.args[0] == "motd")
 		return (this->motd());
+	if (packet.args[0] == "PING")
+		return (this->onPingPacket(packet));
 
 	if (this->state == REGISTERING)
 	{

@@ -49,7 +49,7 @@ void	ft_poll(t_global& global)
 				continue ;
 			if (!ft_sread(client->socket, packet))
 			{
-				client->onDisconnect();
+				client->onQuit("Connection lost");
 				break ;
 			}
 			try {
@@ -60,12 +60,12 @@ void	ft_poll(t_global& global)
 				if (Numeric* e2 = dynamic_cast<Numeric*>(&e))
 					client->write(e.what());
 				else if (Exception* e2 = dynamic_cast<Exception*>(&e))
-					cerr << ft_red(e.what()) << endl;
+					client->onError(e.what());
 				else
 					throw e;
 			}
 			break ;
 		}
 	}
-	// TODO: free clients
+	// TODO: free clients et channels
 }

@@ -87,6 +87,31 @@ void	Client::onDisconnect(void)
 	delete this;
 }
 
+void	Client::onError(const string& reason)
+{
+	cerr << ft_red(reason) << endl;
+	this->write(ERROR(reason));
+	this->onDisconnect();
+}
+
+void	Client::onQuit(const string& reason)
+{
+	for (size_t i = 0; i < this->channels.size(); i++)
+	{
+		Channel* channel = Channel::find(this->global, this->channels[i]);
+		if (!channel)
+			throw Exception("Invalid channel");
+		for (size_t j = 0; j < channel->clients.size(); j++)
+		{
+			Client* client = channel->clients[i];
+			if (client == this)
+				continue ;
+			client->write(QUIT(this, reason));
+		}
+	}
+	this->onDisconnect();
+}
+
 void	Client::onRegisterPacket(const t_packet& packet)
 {
 	if (packet.raw == "CAP LS")
@@ -152,7 +177,7 @@ void	Client::onChannelMessagePacket(const t_packet& packet)
 		Client* client = channel->clients[i];
 		if (client == this)
 			continue ;
-		client->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
+		client->write(PRIVMSG(this, channel->name, packet.rest));
 	}
 }
 
@@ -165,7 +190,47 @@ void	Client::onPrivateMessagePacket(const t_packet& packet)
 			continue ;
 		if (client == this)
 			break ;
-		client->write(":" + this->nickname + " PRIVMSG " + packet.args[1] + " :" + packet.rest);
+		client->write(PRIVMSG(this, client->nickname, packet.rest));
+	}
+	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
+}
+
+void	Client::onMessagePacket(const t_packet& packet)
+{
+	if (packet.args.size() < 2)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+	if (packet.args[1].rfind("#", 0) == 0)
+		return (this->onChannelMessagePacket(packet));
+	else
+		return (this->onPrivateMessagePacket(packet));
+}
+
+void	Client::onChannelNoticePacket(const t_packet& packet)
+{
+	Channel* channel = Channel::find(this->global, packet.args[1]);
+	if (!channel)
+		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
+	if (channel->closed && !ft_vecexists(channel->clients, this))
+		throw Numeric(ERR_CANNOTSENDTOCHAN(this, channel));
+	for (size_t i = 0; i < channel->clients.size(); i++)
+	{
+		Client* client = channel->clients[i];
+		if (client == this)
+			continue ;
+		client->write(NOTICE(this, channel->name, packet.rest));
+	}
+}
+
+void	Client::onPrivateNoticePacket(const t_packet& packet)
+{
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+	{
+		Client* client = this->global.clients[i];
+		if (client->nickname != packet.args[1])
+			continue ;
+		if (client == this)
+			break ;
+		client->write(NOTICE(this, client->nickname, packet.rest));
 	}
 	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
 }
@@ -174,16 +239,10 @@ void	Client::onNoticePacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	for (size_t i = 0; i < this->global.clients.size(); i++)
-	{
-		Client* client = this->global.clients[i];
-		if (client->nickname != packet.args[1])
-			continue ;
-		if (client == this)
-			break ;
-		client->write(":" + this->nickname + " NOTICE " + packet.args[1] + " :" + packet.rest);
-	}
-	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
+	if (packet.args[1].rfind("#", 0) == 0)
+		return (this->onChannelNoticePacket(packet));
+	else
+		return (this->onPrivateNoticePacket(packet));
 }
 
 void	Client::onJoinPacket(const t_packet& packet)
@@ -199,13 +258,13 @@ void	Client::onJoinPacket(const t_packet& packet)
 			throw Numeric(ERR_BADCHANNELKEY(this, channel));
 	channel->clients.push_back(this);
 	this->channels.push_back(channel->name);
+	for (size_t i = 0; i < channel->clients.size(); i++)
+		channel->clients[i]->write(JOIN(this, channel));
 }
 
 void	Client::onQuitPacket(const t_packet& packet)
 {
-	(void)packet;
-	// TODO: afficher le message
-	this->onDisconnect();
+	this->onQuit("Quit: " + packet.rest);
 }
 
 void	Client::onNickPacket(const t_packet& packet)
@@ -216,6 +275,8 @@ void	Client::onNickPacket(const t_packet& packet)
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 		if (this->global.clients[i]->nickname == nickname)
 			throw Numeric(ERR_NICKNAMEINUSE(this, nickname));
+	for (size_t i = 0; i < this->global.clients.size(); i++)
+		this->global.clients[i]->write(NICK(this, nickname));
 	this->nickname = nickname;
 }
 
@@ -226,6 +287,7 @@ void	Client::onOperPacket(const t_packet& packet)
 	if (packet.args[2] != this->global.params.password)
 		throw Numeric(ERR_PASSWDMISMATCH(this));
 	this->opped = true;
+	this->write(RPL_YOUREOPER(this));
 }
 
 void	Client::onInvitePacket(const t_packet& packet)
@@ -243,7 +305,8 @@ void	Client::onInvitePacket(const t_packet& packet)
 		if (client == this)
 			break ;
 		channel->invites.push_back(client->nickname);
-		client->write(":" + this->nickname + " INVITE " + client->nickname + " " + channel->name);
+		client->write(INVITE(this, client, channel));
+		this->write(RPL_INVITING(this, client, channel));
 		return ;
 	}
 	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1])); 
@@ -267,7 +330,7 @@ void	Client::onKickPacket(const t_packet& packet)
 			throw Numeric(ERR_USERNOTINCHANNEL(this, client, channel));
 		ft_vecrem(channel->clients, client);
 		ft_vecrem(client->channels, channel->name);
-		client->write(":" + this->nickname + " KICK " + packet.args[1] + " " + packet.args[2] + " :" + packet.rest);
+		this->write(KICK(this, client, channel));
 		return ;
 	}
 	throw Numeric(ERR_NOSUCHNICK(this, packet.args[2]));
@@ -305,22 +368,11 @@ void	Client::onModePacket(const t_packet& packet)
 	if (packet.args[2] == "-k")
 		channel->password.erase();
 
-	if (channel->password.empty())
-		if (channel->invite)
-			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +ni");
-		else
-			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +n");
-	else
-		if (channel->invite)
-			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nki");
-		else
-			this->write(":" + this->nickname + " 324 " + this->nickname + " " + packet.args[1] + " +nk");
+	this->write(RPL_CHANNELMODEIS(this, channel));
 }
 
 void	Client::onRegularPacket(const t_packet& packet)
 {
-	cout << "<- " << packet.raw << endl;
-	
 	if (packet.args[0] == "QUIT")
 		return (this->onQuitPacket(packet));
 	if (packet.args[0] == "JOIN")
@@ -337,16 +389,8 @@ void	Client::onRegularPacket(const t_packet& packet)
 		return (this->onKickPacket(packet));
 	if (packet.args[0] == "INVITE")
 		return (this->onInvitePacket(packet));
-
 	if (packet.args[0] == "PRIVMSG")
-	{
-		if (packet.args.size() < 2)
-			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-		if (packet.args[1].rfind("#", 0) == 0)
-			return (this->onChannelMessagePacket(packet));
-		else
-			return (this->onPrivateMessagePacket(packet));
-	}
+		return (this->onMessagePacket(packet));
 
 	if (packet.args[0] == "TIME")
 	{
@@ -398,6 +442,8 @@ void	Client::motd(void)
 
 void	Client::onPacket(const t_packet& packet)
 {
+	cout << "<- " << packet.raw << endl;
+
 	if (packet.args.size() == 0)
 		return ;
 	if (packet.args[0] == "PING")

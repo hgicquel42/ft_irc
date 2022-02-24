@@ -62,9 +62,23 @@ string	ERR_USERNOTINCHANNEL(const Client* client, const Client* target, const Ch
 	return (ft_format("441 %s %s %s :%s", args));
 }
 
-string	ERR_NOTONCHANNEL(const Client* client)
+string	ERR_NOTONCHANNEL(const Client* client, const Channel *channel)
 {
-	
+	vector<string> args;
+	args.push_back(client->nickname);
+	args.push_back(channel->name);
+	args.push_back("You're not on that channel");
+	return (ft_format("442 %s %s :%s", args));
+}
+
+string	ERR_USERONCHANNEL(const Client* client, const Client* target, const Channel *channel)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	args.push_back(target->nickname);
+	args.push_back(channel->name);
+	args.push_back("You're not on that channel");
+	return (ft_format("443 %s %s %s :%s", args));
 }
 
 string	ERR_NEEDMOREPARAMS(const Client* client, const t_packet& packet)

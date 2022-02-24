@@ -121,6 +121,23 @@ string	RPL_INVITING(const Client* client, const Client* target, const Channel* c
 	return (ft_format("341 %s %s %s", args));
 }
 
+string	RPL_BANLIST(const Client* client, const string& mask, const Channel* channel)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	args.push_back(channel->name);
+	args.push_back(mask);
+	return (ft_format("367 %s %s %s", args));
+}
+
+string	RPL_ENDOFBANLIST(const Client* client, const Channel* channel)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	args.push_back(channel->name);
+	return (ft_format("368 %s %s :End of channel ban list", args));
+}
+
 string	RPL_MOTDSTART(const Client* client, const string& server)
 {
 	vector<string> args;

@@ -62,6 +62,14 @@ Client&	Client::operator=(const Client& from)
 	return (*this);
 }
 
+Client*	Client::find(VClients& clients, const string& nickname)
+{
+	for (size_t i = 0; i < clients.size(); i++)
+		if (clients[i]->nickname == nickname)
+			return (clients[i]);
+	return (NULL);
+}
+
 void	Client::write(const string& packet)
 {
 	string line(packet + "\r\n");
@@ -98,7 +106,7 @@ void	Client::onQuit(const string& reason)
 {
 	for (size_t i = 0; i < this->channels.size(); i++)
 	{
-		Channel* channel = Channel::find(this->global, this->channels[i]);
+		Channel* channel = Channel::find(this->global.channels, this->channels[i]);
 		if (!channel)
 			throw Exception("Invalid channel");
 		for (size_t j = 0; j < channel->clients.size(); j++)
@@ -136,13 +144,7 @@ void	Client::onRegisterPacket(const t_packet& packet)
 
 	if (packet.args[0] == "NICK")
 	{
-		if (packet.args.size() < 2)
-			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-		string nickname = packet.args[1];
-		for (size_t i = 0; i < this->global.clients.size(); i++)
-			if (this->global.clients[i]->nickname == nickname)
-				throw Numeric(ERR_NICKNAMEINUSE(this, nickname));
-		this->nickname = nickname;
+		this->onNickPacket(packet);
 		this->steps.nick = true;
 		return ;
 	}
@@ -174,7 +176,7 @@ void	Client::onRegisterPacket(const t_packet& packet)
 
 void	Client::onChannelMessagePacket(const t_packet& packet)
 {
-	Channel* channel = Channel::find(this->global, packet.args[1]);
+	Channel* channel = Channel::find(this->global.channels, packet.args[1]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
 	if (channel->closed && !ft_vecexists(channel->clients, this))
@@ -190,24 +192,17 @@ void	Client::onChannelMessagePacket(const t_packet& packet)
 
 void	Client::onPrivateMessagePacket(const t_packet& packet)
 {
-	for (size_t i = 0; i < this->global.clients.size(); i++)
-	{
-		Client* client = this->global.clients[i];
-		if (client->nickname != packet.args[1])
-			continue ;
-		if (client == this)
-			break ;
-		client->write(PRIVMSG(this, client->nickname, packet.rest));
-		return ;
-	}
-	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
+	Client* client = Client::find(this->global.clients, packet.args[1]);
+	if (!client || client == this)
+		throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
+	client->write(PRIVMSG(this, client->nickname, packet.rest));
 }
 
 void	Client::onMessagePacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	if (packet.args[1].rfind("#", 0) == 0)
+	if (Channel::isname(packet.args[1]))
 		return (this->onChannelMessagePacket(packet));
 	else
 		return (this->onPrivateMessagePacket(packet));
@@ -215,7 +210,7 @@ void	Client::onMessagePacket(const t_packet& packet)
 
 void	Client::onChannelNoticePacket(const t_packet& packet)
 {
-	Channel* channel = Channel::find(this->global, packet.args[1]);
+	Channel* channel = Channel::find(this->global.channels, packet.args[1]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
 	if (channel->closed && !ft_vecexists(channel->clients, this))
@@ -231,24 +226,17 @@ void	Client::onChannelNoticePacket(const t_packet& packet)
 
 void	Client::onPrivateNoticePacket(const t_packet& packet)
 {
-	for (size_t i = 0; i < this->global.clients.size(); i++)
-	{
-		Client* client = this->global.clients[i];
-		if (client->nickname != packet.args[1])
-			continue ;
-		if (client == this)
-			break ;
-		client->write(NOTICE(this, client->nickname, packet.rest));
-		return ;
-	}
-	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
+	Client* client = Client::find(this->global.clients, packet.args[1]);
+	if (!client || client == this)
+		throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
+	client->write(NOTICE(this, client->nickname, packet.rest));
 }
 
 void	Client::onNoticePacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	if (packet.args[1].rfind("#", 0) == 0)
+	if (Channel::isname(packet.args[1]))
 		return (this->onChannelNoticePacket(packet));
 	else
 		return (this->onPrivateNoticePacket(packet));
@@ -258,15 +246,20 @@ void	Client::onJoinPacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	Channel* channel = Channel::findOrCreate(this->global, packet.args[1]);
+
+	Channel* channel = Channel::findOrCreate(this->global.channels, packet.args[1]);
 	if (channel->invite)
 		if (!ft_vecexists(channel->invites, this->nickname))
 			throw Numeric(ERR_INVITEONLYCHAN(this, channel));
 	if (!channel->password.empty())
 		if (packet.args[2] != channel->password)
 			throw Numeric(ERR_BADCHANNELKEY(this, channel));
+	if (ft_vecexists(channel->banlist, this->nickname))
+		throw Numeric(ERR_BANNEDFROMCHAN(this, channel));
+
 	channel->clients.push_back(this);
 	this->channels.push_back(channel->name);
+
 	for (size_t i = 0; i < channel->clients.size(); i++)
 		channel->clients[i]->write(JOIN(this, channel));
 }
@@ -280,10 +273,11 @@ void	Client::onNickPacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+		
 	string nickname = packet.args[1];
-	for (size_t i = 0; i < this->global.clients.size(); i++)
-		if (this->global.clients[i]->nickname == nickname)
-			throw Numeric(ERR_NICKNAMEINUSE(this, nickname));
+	if (Client::find(this->global.clients, nickname))
+		throw Numeric(ERR_NICKNAMEINUSE(this, nickname));
+		
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 		this->global.clients[i]->write(NICK(this, nickname));
 	this->nickname = nickname;
@@ -303,55 +297,52 @@ void	Client::onInvitePacket(const t_packet& packet)
 {
 	if (packet.args.size() < 3)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	Channel* channel = Channel::find(this->global, packet.args[2]);
+
+	Channel* channel = Channel::find(this->global.channels, packet.args[2]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[2]));
 	if (!ft_vecexists(channel->clients, this))
-		// TODO ERR_NOTONCHANNEL (442)
-	for (size_t i = 0; i < this->global.clients.size(); i++)
-	{
-		Client* client = this->global.clients[i];
-		if (client->nickname != packet.args[1])
-			continue;
-		if (client == this)
-			break ;
-		channel->invites.push_back(client->nickname);
-		client->write(INVITE(this, client, channel));
-		this->write(RPL_INVITING(this, client, channel));
-		return ;
-	}
-	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1])); 
+		throw Numeric(ERR_NOTONCHANNEL(this, channel));
+
+	Client* client = Client::find(this->global.clients, packet.args[1]);
+	if (!client || client == this)
+		throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
+	if (ft_vecexists(channel->clients, client))
+		throw Numeric(ERR_USERONCHANNEL(this, client, channel));
+
+	channel->invites.push_back(client->nickname);
+	client->write(INVITE(this, client, channel));
+	this->write(RPL_INVITING(this, client, channel));
 }
 
 void	Client::onKickPacket(const t_packet& packet)
 {
 	if (packet.args.size() < 3)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	Channel* channel = Channel::find(this->global, packet.args[1]);
+
+	Channel* channel = Channel::find(this->global.channels, packet.args[1]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
 	if (!this->opped)
 		throw Numeric(ERR_CHANOPRIVSNEEDED(this, channel));
-	for (size_t i = 0; i < channel->clients.size(); i++)
-	{
-		Client* client = channel->clients[i];
-		if (client->nickname != packet.args[2])
-			continue ;
-		if (!ft_vecexists(client->channels, channel->name))
-			throw Numeric(ERR_USERNOTINCHANNEL(this, client, channel));
-		ft_vecrem(channel->clients, client);
-		ft_vecrem(client->channels, channel->name);
-		this->write(KICK(this, client, channel));
-		return ;
-	}
-	throw Numeric(ERR_NOSUCHNICK(this, packet.args[2]));
+	
+	Client* client = Client::find(this->global.clients, packet.args[2]);
+	if (!client)
+		throw Numeric(ERR_NOSUCHNICK(this, packet.args[2]));
+	if (!ft_vecexists(channel->clients, client))
+		throw Numeric(ERR_USERNOTINCHANNEL(this, client, channel));
+
+	ft_vecrem(channel->clients, client);
+	ft_vecrem(client->channels, channel->name);
+	this->write(KICK(this, client, channel));
+	return ;
 }
 
 void	Client::onListPacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 	{
-
+		
 	}
 	else
 	{
@@ -361,29 +352,43 @@ void	Client::onListPacket(const t_packet& packet)
 
 void	Client::onModePacket(const t_packet& packet)
 {
-	if (packet.args.size() < 3)
+	if (packet.args.size() < 2)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-	if (packet.args[1].rfind("#", 0) != 0)
+	if (!Channel::isname(packet.args[1]))
 		return ;
-	Channel* channel = Channel::find(this->global, packet.args[1]);
+
+	Channel* channel = Channel::find(this->global.channels, packet.args[1]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
-	if (!this->opped)
+	if (!this->opped && !ft_vecexists(channel->operlist, this->nickname))
 		throw Numeric(ERR_CHANOPRIVSNEEDED(this, channel));
+	if (packet.args.size() == 2)
+		return (this->write(RPL_CHANNELMODEIS(this, channel)));
 
 	if (packet.args[2] == "+n")
+	{
 		channel->closed = true;
+		return ;
+	}
+		
 	if (packet.args[2] == "-n")
+	{
 		channel->closed = false;
+		return ;
+	}
 
 	if (packet.args[2] == "+i")
 	{
 		channel->invite = true;
 		channel->closed = true;
+		return ;
 	}
 
 	if (packet.args[2] == "-i")
+	{
 		channel->invite = false;
+		return ;
+	}
 
 	if (packet.args[2] == "+k")
 	{
@@ -391,21 +396,55 @@ void	Client::onModePacket(const t_packet& packet)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		channel->password = packet.args[3];
 		channel->closed = true;
+		return ;
 	}
 
 	if (packet.args[2] == "-k")
+	{
 		channel->password.erase();
+		return ;
+	}
 
 	if (packet.args[2] == "+b")
 	{
+		if (packet.args.size() == 3)
+		{
+			for (size_t i = 0; i < channel->banlist.size(); i++)
+				this->write(RPL_BANLIST(this, channel->banlist[i], channel));
+			this->write(RPL_ENDOFBANLIST(this, channel));
+			return ;
+		}
+		if (packet.args.size() == 4)
+		{
+			if (ft_vecexists(channel->banlist, packet.args[3]))
+				return ;
+			channel->banlist.push_back(packet.args[3]);
+			Client* target = Client::find(channel->clients, packet.args[3]);
+			if (target)
+				channel->kick(target);
+			return ;
+		}
+	}
+	
+	if (packet.args[2] == "-b")
+	{
 		if (packet.args.size() < 4)
 			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
-		if (ft_vecexists(channel->banlist, packet.args[3]))
-			throw Numeric(ERR_BANNEDFROMCHAN(this, packet));
+		if (!ft_vecexists(channel->banlist, packet.args[3]))
+			return ;
+		ft_vecrem(channel->banlist, packet.args[3]);
+		return ;
 	}
-		
 
-	this->write(RPL_CHANNELMODEIS(this, channel));
+	if (packet.args[2] == "+o")
+	{
+		if (packet.args.size() < 4)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+		Client* target = Client::find(channel->clients, packet.args[3]);
+		if (!target)
+			throw Numeric(ERR_USERNOTINCHANNEL(this, target, channel));
+		channel->operlist.push_back(packet.args[3]);
+	}
 }
 
 void	Client::onRegularPacket(const t_packet& packet)

@@ -31,6 +31,10 @@ string	RPL_CHANNELMODEIS(const Client* client, const Channel* channel);
 
 string	RPL_INVITING(const Client* client, const Client* target, const Channel* channel);
 
+string	RPL_BANLIST(const Client* client, const string& mask, const Channel* channel);
+
+string	RPL_ENDOFBANLIST(const Client* client, const Channel* channel);
+
 string	RPL_MOTDSTART(const Client* client, const string& server);
 
 string	RPL_MOTD(const Client* client, const string& line);

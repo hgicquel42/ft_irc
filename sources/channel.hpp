@@ -10,6 +10,10 @@ typedef struct s_global t_global;
 
 using namespace std;
 
+typedef vector<Client*>			VClients;
+typedef vector<Channel*>		VChannels;
+typedef map<string, Channel*>	MChannels;
+
 class Channel
 {
 	private:
@@ -23,6 +27,7 @@ class Channel
 		vector<Client*>	clients;
 		vector<string>	invites;
 		vector<string>	banlist;
+		vector<string>	operlist;
 		
 		Channel(const string& name);
 		Channel(const Channel& from);
@@ -30,7 +35,11 @@ class Channel
 
 		Channel&	operator=(const Channel& from);
 
-		static Channel* find(t_global& global, const string& name);
+		void	 	kick(Client* client);
 
-		static Channel*	findOrCreate(t_global& global, const string& name);
+		static Channel* find(MChannels& channels, const string& name);
+
+		static Channel*	findOrCreate(MChannels& channels, const string& name);
+
+		static bool		isname(const string& name);
 };

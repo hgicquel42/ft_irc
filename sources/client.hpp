@@ -14,6 +14,10 @@ typedef struct s_global t_global;
 
 using namespace std;
 
+typedef vector<Client*>			VClients;
+typedef vector<Channel*>		VChannels;
+typedef map<string, Channel*>	MChannels;
+
 typedef struct	s_steps
 {
 	bool	nick;
@@ -75,6 +79,7 @@ class Client
 		void	onModePacket(const t_packet& packet);
 
 		void	write(const string& raw);
-
 		void	motd(void);
+
+		static Client*	find(VClients& clients, const string& nickname);
 };

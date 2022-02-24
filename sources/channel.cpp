@@ -1,5 +1,9 @@
 #include "channel.hpp"
 
+#include <iostream>
+
+#include "utils/vector.hpp"
+
 using namespace std;
 
 Channel::Channel(const string& name):
@@ -35,20 +39,43 @@ Channel&	Channel::operator=(const Channel& from)
 	return (*this);
 }
 
-Channel* Channel::find(t_global& global, const string& name)
+void Channel::kick(Client* client)
 {
-	MChannels::iterator it = global.channels.find(name);
-	if (it != global.channels.end())
+	ft_vecrem(this->clients, client);
+	ft_vecrem(client->channels, this->name);
+}
+
+Channel* Channel::find(MChannels& channels, const string& name)
+{
+	MChannels::iterator it = channels.find(name);
+	if (it != channels.end())
 		return (it->second);
 	return (NULL);
 }
 
-Channel*	Channel::findOrCreate(t_global& global, const string& name)
+Channel*	Channel::findOrCreate(MChannels& channels, const string& name)
 {
-	MChannels::iterator it = global.channels.find(name);
-	if (it != global.channels.end())
+	MChannels::iterator it = channels.find(name);
+	if (it != channels.end())
 		return (it->second);
 	Channel* channel = new Channel(name);
-	global.channels[name] = channel;
+	channels[name] = channel;
 	return (channel);
+}
+
+bool	Channel::isname(const string& name)
+{
+	if (name.size() > 50)
+		return (false);
+	if (name.find(",") != string::npos)
+		return (false);
+	if (name.rfind("#", 0) == 0)
+		return (true);
+	if (name.rfind("&", 0) == 0)
+		return (true);
+	if (name.rfind("+", 0) == 0)
+		return (true);
+	if (name.rfind("!", 0) == 0)
+		return (true);
+	return (false);
 }

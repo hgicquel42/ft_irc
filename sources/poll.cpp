@@ -47,6 +47,7 @@ void	ft_poll(t_global& global)
 			Client* client = global.clients[i];
 			if (!FD_ISSET(client->socket.file, &pollset))
 				continue ;
+			// TODO buffer
 			if (!ft_sread(client->socket, packet))
 			{
 				client->onQuit("Connection lost");

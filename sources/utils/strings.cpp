@@ -7,17 +7,6 @@
 using namespace std;
 
 /**
- * @brief remove last character
- * 
- * @param s 
- * @return string 
- */
-string ft_strpop(const string s)
-{
-	return (s.substr(0, s.size() - 1));
-}
-
-/**
  * @brief true if string is all spaces
  * 
  * @param s 
@@ -30,6 +19,24 @@ bool	ft_strisspace(const string s)
 		if (!isspace(s[i]))
 			return (false);
 	return (true);
+}
+
+bool	ft_strstarts(const string& a, const string& b)
+{
+	size_t	la = a.size();
+	size_t	lb = b.size();
+	if (la < lb)
+		return (false);
+	return (a.compare(0, lb, b) == 0);
+}
+
+bool	ft_strends(const string& a, const string& b)
+{
+	size_t	la = a.size();
+	size_t	lb = b.size();
+	if (la < lb)
+		return (false);
+	return (a.compare(la - lb, lb, b) == 0);
 }
 
 /**

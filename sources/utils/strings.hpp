@@ -6,14 +6,6 @@
 using namespace std;
 
 /**
- * @brief remove last character
- * 
- * @param s 
- * @return string 
- */
-string ft_strpop(string s);
-
-/**
  * @brief true if string is all spaces
  * 
  * @param s 
@@ -30,6 +22,10 @@ bool	ft_strisspace(const string s);
  * @return false 
  */
 bool	ft_strhasspace(const string s);
+
+bool	ft_strstarts(const string& a, const string& b);
+
+bool	ft_strends(const string& a, const string& b);
 
 /**
  * @brief split by crlf

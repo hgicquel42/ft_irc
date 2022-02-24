@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "strings.hpp"
 
@@ -66,5 +67,6 @@ string	ft_sread(t_socket socket) throw(Exception)
 	int	n = read(socket.file, &buffer, 1024);
 	if (n == -1)
 		throw Exception("Could not read socket");
+	cout << n << endl;
 	return (string(buffer, n));
 }

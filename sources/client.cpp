@@ -191,6 +191,7 @@ void	Client::onPrivateMessagePacket(const t_packet& packet)
 		if (client == this)
 			break ;
 		client->write(PRIVMSG(this, client->nickname, packet.rest));
+		return ;
 	}
 	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
 }
@@ -231,6 +232,7 @@ void	Client::onPrivateNoticePacket(const t_packet& packet)
 		if (client == this)
 			break ;
 		client->write(NOTICE(this, client->nickname, packet.rest));
+		return ;
 	}
 	throw Numeric(ERR_NOSUCHNICK(this, packet.args[1]));
 }
@@ -297,6 +299,8 @@ void	Client::onInvitePacket(const t_packet& packet)
 	Channel* channel = Channel::find(this->global, packet.args[2]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[2]));
+	if (!ft_vecexists(channel->clients, this))
+
 	for (size_t i = 0; i < this->global.clients.size(); i++)
 	{
 		Client* client = this->global.clients[i];
@@ -453,6 +457,8 @@ void	Client::onPacket(const t_packet& packet)
 		return ;
 	if (packet.args[0] == "PING")
 		return ;
+	if (packet.args[0] == "motd")
+		return (this->motd());
 
 	if (this->state == REGISTERING)
 	{

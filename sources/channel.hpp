@@ -22,6 +22,7 @@ class Channel
 
 		vector<Client*>	clients;
 		vector<string>	invites;
+		vector<string>	banlist;
 		
 		Channel(const string& name);
 		Channel(const Channel& from);

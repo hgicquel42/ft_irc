@@ -93,6 +93,15 @@ string	ERR_INVITEONLYCHAN(const Client* client, const Channel *channel)
 	return (ft_format("473 %s %s :%s", args));
 }
 
+string	ERR_BANNEDFROMCHAN(const Client* client, const Channel *channel)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	args.push_back(channel->name);
+	args.push_back("Cannot join channel (+b)");
+	return (ft_format("474 %s %s :%s", args));
+}
+
 string	ERR_BADCHANNELKEY(const Client* client, const Channel *channel)
 {
 	vector<string> args;

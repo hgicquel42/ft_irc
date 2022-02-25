@@ -62,6 +62,7 @@ int	main(int argc, char **argv)
 		ft_exit(global);
 		return (EXIT_SUCCESS);
 	} catch(exception& e) {
+		ft_exit(global);
 		cerr << ft_red(e.what()) << "\n";
 		return (EXIT_FAILURE);
 	}

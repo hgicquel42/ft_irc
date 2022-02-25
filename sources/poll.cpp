@@ -31,11 +31,7 @@ void	ft_poll(t_global& global)
 			FD_SET(global.clients[i]->socket.file, &pollset);
 
 		if (select(FD_SETSIZE, &pollset, NULL, NULL, NULL) == -1)
-		{
-			if (errno == EINTR)
-				break ;
 			throw Exception(strerror(errno));
-		}
 
 		if (FD_ISSET(global.server.file, &pollset))
 		{

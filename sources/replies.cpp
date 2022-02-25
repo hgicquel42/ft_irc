@@ -82,7 +82,7 @@ string	PART(const Client* client, const Channel* channel, const string& reason)
 	args.push_back(client->nickname);
 	args.push_back(channel->name);
 	args.push_back(reason);
-	return (ft_format(":%s PART %s :%s", args));
+	return (ft_format(":%s@Chadnet PART %s :%s", args));
 }
 
 string	RPL_WELCOME(const Client* client, const string& network)

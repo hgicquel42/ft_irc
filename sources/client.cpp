@@ -70,7 +70,7 @@ Client&	Client::operator=(const Client& from)
 Client*	Client::find(VClients& clients, const string& nickname)
 {
 	for (size_t i = 0; i < clients.size(); i++)
-		if (clients[i]->nickname == nickname)
+		if (clients[i]->nickname == nickname && clients[i]->state == REGISTERED)
 			return (clients[i]);
 	return (NULL);
 }
@@ -266,7 +266,7 @@ void	Client::onJoinPacket(const t_packet& packet)
 	if (!channel->password.empty())
 	{
 		if (packet.args.size() < 3)
-			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+			throw Numeric(ERR_BADCHANNELKEY(this, channel));
 		if (packet.args[2] != channel->password)
 			throw Numeric(ERR_BADCHANNELKEY(this, channel));
 	}

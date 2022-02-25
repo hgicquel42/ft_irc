@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <signal.h>
 
 #include "utils/colors.hpp"
 #include "utils/sockets.hpp"
@@ -13,10 +14,17 @@
 
 using namespace std;
 
+t_global global;
+
+void	ft_signal(int signal)
+{
+	(void) signal;
+	global.running = false;
+}
+
 void	ft_start(int argc, char **argv)
 {
-	t_global global;
-
+	global.running = true;
 	global.params = ft_params(argc, argv);
 
 	try {
@@ -29,14 +37,29 @@ void	ft_start(int argc, char **argv)
 	cout << global.params.port << "\n";
 
 	ft_poll(global);
+}
 
+void	ft_exit(t_global& global)
+{
+	MChannels::iterator it = global.channels.begin();
+	for (; it != global.channels.end(); it++)
+		delete it->second;
+	for (size_t i = 0; i < global.clients.size(); i++)
+	{
+		close(global.clients[i]->socket.file);
+		delete global.clients[i];
+	}
 	close(global.server.file);
 }
 
 int	main(int argc, char **argv)
 {
 	try {
+		signal(SIGINT, ft_signal);
+		signal(SIGTERM, ft_signal);
+		signal(SIGQUIT, ft_signal);
 		ft_start(argc, argv);
+		ft_exit(global);
 		return (EXIT_SUCCESS);
 	} catch(exception& e) {
 		cerr << ft_red(e.what()) << "\n";

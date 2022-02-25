@@ -43,6 +43,13 @@ string	ERR_UNKNOWNCOMMAND(const Client* client, const t_packet& packet)
 	return (ft_format("421 %s %s :%s", args));
 }
 
+string	ERR_NOMOTD(const Client* client)
+{
+	vector<string> args;
+	args.push_back(client->nickname);
+	return (ft_format("422 %s :MOTD File is missing, put it back though", args));
+}
+
 string	ERR_NICKNAMEINUSE(const Client* client, const string& nickname)
 {
 	vector<string> args;

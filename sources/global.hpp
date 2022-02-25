@@ -21,6 +21,7 @@ typedef map<string, Channel*>	MChannels;
 
 typedef struct s_global
 {
+	bool		running;
 	t_params	params;
 	t_socket	server;
 	VClients	clients;

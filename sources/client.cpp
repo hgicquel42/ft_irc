@@ -335,7 +335,7 @@ void	Client::onKickPacket(const t_packet& packet)
 	Channel* channel = Channel::find(this->global.channels, packet.args[1]);
 	if (!channel)
 		throw Numeric(ERR_NOSUCHCHANNEL(this, packet.args[1]));
-	if (!this->opped)
+	if (!this->opped && !ft_vecexists(channel->operlist, this->nickname))
 		throw Numeric(ERR_CHANOPRIVSNEEDED(this, channel));
 	
 	Client* client = Client::find(this->global.clients, packet.args[2]);
@@ -502,7 +502,7 @@ void	Client::motd(void)
 {
 	ifstream file("motd.txt");
 	if (!file)
-		throw Exception("MOTD not found");
+		throw Numeric(ERR_NOMOTD(this));
 
 	this->write(RPL_MOTDSTART(this, "Chadland"));
 	for (string line; getline(file, line);)

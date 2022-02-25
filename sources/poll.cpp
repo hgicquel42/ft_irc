@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <signal.h>
 
 #include "utils/strings.hpp"
 #include "utils/packet.hpp"
@@ -21,7 +22,7 @@ void	ft_poll(t_global& global)
 {
 	fd_set		pollset;
 
-	while (true) 
+	while (global.running) 
 	{
 		FD_ZERO(&pollset);
 		FD_SET(global.server.file, &pollset);
@@ -30,7 +31,11 @@ void	ft_poll(t_global& global)
 			FD_SET(global.clients[i]->socket.file, &pollset);
 
 		if (select(FD_SETSIZE, &pollset, NULL, NULL, NULL) == -1)
-			throw Exception(strerror(errno));	
+		{
+			if (errno == EINTR)
+				break ;
+			throw Exception(strerror(errno));
+		}
 
 		if (FD_ISSET(global.server.file, &pollset))
 		{
@@ -71,5 +76,4 @@ void	ft_poll(t_global& global)
 			break ;
 		}
 	}
-	// TODO: free clients et channels
 }

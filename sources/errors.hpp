@@ -13,6 +13,8 @@ string	ERR_CANNOTSENDTOCHAN(const Client* client, const Channel *channel);
 
 string	ERR_UNKNOWNCOMMAND(const Client* client, const t_packet& packet);
 
+string  ERR_NOMOTD(const Client* client);
+
 string	ERR_NICKNAMEINUSE(const Client* client, const string& nickname);
 
 string	ERR_USERNOTINCHANNEL(const Client* client, const Client* target, const Channel *channel);

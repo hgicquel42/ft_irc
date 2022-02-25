@@ -43,8 +43,8 @@ class Client
 		string	username;
 		string	hostname;
 
-		vector<string>	channels;
-		bool			opped;
+		VChannels	channels;
+		bool		opped;
 
 		Client(t_global& global, t_socket socket);
 		Client(const Client& from);

@@ -46,7 +46,7 @@ void	ft_poll(t_global& global)
 			Client* client = global.clients[i];
 			if (!FD_ISSET(client->socket.file, &pollset))
 				continue ;
-			string	buffer = ft_sread(client->socket);
+			string buffer = ft_sread(client->socket);
 			if (buffer.empty())
 			{
 				client->onQuit("Connection lost");
@@ -57,6 +57,7 @@ void	ft_poll(t_global& global)
 				break ;
 			try {
 				vector<string> packets = ft_split(client->buffer);
+				client->buffer.erase();
 				for (size_t j = 0; j < packets.size(); j++)
 					client->onPacket(ft_unpack(packets[j]));
 			} catch (exception& e){
@@ -67,7 +68,6 @@ void	ft_poll(t_global& global)
 				else
 					throw e;
 			}
-			client->buffer.erase();
 			break ;
 		}
 	}

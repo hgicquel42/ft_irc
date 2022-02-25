@@ -94,7 +94,7 @@ void	Client::onDisconnect(void)
 	cout << "Disconnected\n";
 
 	for (size_t i = 0; i < this->channels.size(); i++)
-		ft_vecrem(this->global.channels[this->channels[i]]->clients, this);
+		ft_vecrem(this->channels[i]->clients, this);
 	ft_vecrem(this->global.clients, this);
 	close(this->socket.file);
 	delete this;
@@ -111,9 +111,7 @@ void	Client::onQuit(const string& reason)
 {
 	for (size_t i = 0; i < this->channels.size(); i++)
 	{
-		Channel* channel = Channel::find(this->global.channels, this->channels[i]);
-		if (!channel)
-			throw Exception("Invalid channel");
+		Channel* channel = this->channels[i];
 		for (size_t j = 0; j < channel->clients.size(); j++)
 		{
 			Client* client = channel->clients[j];
@@ -130,6 +128,11 @@ void	Client::onPingPacket(const t_packet& packet)
 	if (packet.args.size() < 2)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 	this->write(PONG(packet.args[1]));
+}
+
+void	Client::onQuitPacket(const t_packet& packet)
+{
+	this->onQuit("Quit: " + packet.rest);
 }
 
 void	Client::onRegisterPacket(const t_packet& packet)
@@ -263,15 +266,10 @@ void	Client::onJoinPacket(const t_packet& packet)
 		throw Numeric(ERR_BANNEDFROMCHAN(this, channel));
 
 	channel->clients.push_back(this);
-	this->channels.push_back(channel->name);
+	this->channels.push_back(channel);
 
 	for (size_t i = 0; i < channel->clients.size(); i++)
 		channel->clients[i]->write(JOIN(this, channel));
-}
-
-void	Client::onQuitPacket(const t_packet& packet)
-{
-	this->onQuit("Quit: " + packet.rest);
 }
 
 void	Client::onNickPacket(const t_packet& packet)
@@ -338,7 +336,7 @@ void	Client::onKickPacket(const t_packet& packet)
 		throw Numeric(ERR_USERNOTINCHANNEL(this, client, channel));
 
 	ft_vecrem(channel->clients, client);
-	ft_vecrem(client->channels, channel->name);
+	ft_vecrem(client->channels, channel);
 	this->write(KICK(this, client, channel));
 	client->write(PART(client, channel, "Kicked"));
 	return ;
@@ -377,7 +375,7 @@ void	Client::onPartPacket(const t_packet& packet)
 	if (!ft_vecexists(channel->clients, this))
 		throw Numeric(ERR_NOTONCHANNEL(this, channel));
 	ft_vecrem(channel->clients, this);
-	ft_vecrem(this->channels, channel->name);
+	ft_vecrem(this->channels, channel);
 	this->write(PART(this, channel, packet.rest));
 }
 
@@ -454,7 +452,7 @@ void	Client::onModePacket(const t_packet& packet)
 			if (!target)
 				return ;
 			ft_vecrem(channel->clients, target);
-			ft_vecrem(target->channels, channel->name);
+			ft_vecrem(target->channels, channel);
 			target->write(PART(target, channel, "Banned"));
 			return ;
 		}

@@ -254,14 +254,23 @@ void	Client::onJoinPacket(const t_packet& packet)
 {
 	if (packet.args.size() < 2)
 		throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
+	if (!Channel::isname(packet.args[1]))
+		return ;
 
 	Channel* channel = Channel::findOrCreate(this->global.channels, packet.args[1]);
+
 	if (channel->invite)
 		if (!ft_vecexists(channel->invites, this->nickname))
 			throw Numeric(ERR_INVITEONLYCHAN(this, channel));
+
 	if (!channel->password.empty())
+	{
+		if (packet.args.size() < 3)
+			throw Numeric(ERR_NEEDMOREPARAMS(this, packet));
 		if (packet.args[2] != channel->password)
 			throw Numeric(ERR_BADCHANNELKEY(this, channel));
+	}
+
 	if (ft_vecexists(channel->banlist, this->nickname))
 		throw Numeric(ERR_BANNEDFROMCHAN(this, channel));
 

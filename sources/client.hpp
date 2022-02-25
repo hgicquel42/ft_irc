@@ -60,8 +60,6 @@ class Client
 
 		void	onPacket(const t_packet& packet);
 		void	onRegisterPacket(const t_packet& packet);
-		void	onRegularPacket(const t_packet& packet);
-		void	onPingPacket(const t_packet& packet);
 		
 		void	onMessagePacket(const t_packet& packet);
 		void	onChannelMessagePacket(const t_packet& packet);
@@ -71,6 +69,7 @@ class Client
 		void	onChannelNoticePacket(const t_packet& packet);
 		void	onPrivateNoticePacket(const t_packet& packet);
 
+		void	onPingPacket(const t_packet& packet);
 		void	onJoinPacket(const t_packet& packet);
 		void	onQuitPacket(const t_packet& packet);
 		void	onNickPacket(const t_packet& packet);

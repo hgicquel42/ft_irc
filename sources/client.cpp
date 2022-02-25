@@ -491,8 +491,47 @@ void	Client::onModePacket(const t_packet& packet)
 	}
 }
 
-void	Client::onRegularPacket(const t_packet& packet)
+void	Client::motd(void)
 {
+	ifstream file("motd.txt");
+	if (!file)
+		throw Exception("MOTD not found");
+
+	this->write(RPL_MOTDSTART(this, "Chadland"));
+	for (string line; getline(file, line);)
+		this->write(RPL_MOTD(this, line));
+	this->write(RPL_ENDOFMOTD(this));
+}
+
+void	Client::onPacket(const t_packet& packet)
+{
+	cout << "<- " << packet.raw << endl;
+
+	if (packet.args.size() == 0)
+		return ;
+	if (packet.args[0] == "motd")
+		return (this->motd());
+	if (packet.args[0] == "PING")
+		return (this->onPingPacket(packet));
+
+	if (this->state == REGISTERING)
+	{
+		this->onRegisterPacket(packet);
+		if (this->steps.caps)
+			return ;
+		if (!this->steps.pass)
+			return ;
+		if (!this->steps.nick)
+			return ;
+		if (!this->steps.user)
+			return ;
+		this->state = REGISTERED;
+		this->write(RPL_WELCOME(this, "Chadnet"));
+		this->write(RPL_YOURHOST(this));
+		this->motd();
+		return ;
+	}
+
 	if (packet.args[0] == "QUIT")
 		return (this->onQuitPacket(packet));
 	if (packet.args[0] == "JOIN")
@@ -550,52 +589,4 @@ void	Client::onRegularPacket(const t_packet& packet)
 	}
 
 	throw Numeric(ERR_UNKNOWNCOMMAND(this, packet));
-}
-
-void	Client::motd(void)
-{
-	ifstream file("motd.txt");
-	if (!file)
-		throw Exception("MOTD not found");
-
-	this->write(RPL_MOTDSTART(this, "Chadland"));
-	for (string line; getline(file, line);)
-		this->write(RPL_MOTD(this, line));
-	this->write(RPL_ENDOFMOTD(this));
-}
-
-void	Client::onPacket(const t_packet& packet)
-{
-	cout << "<- " << packet.raw << endl;
-
-	if (packet.args.size() == 0)
-		return ;
-	if (packet.args[0] == "motd")
-		return (this->motd());
-	if (packet.args[0] == "PING")
-		return (this->onPingPacket(packet));
-
-	if (this->state == REGISTERING)
-	{
-		this->onRegisterPacket(packet);
-		if (this->steps.caps)
-			return ;
-		if (!this->steps.pass)
-			return ;
-		if (!this->steps.nick)
-			return ;
-		if (!this->steps.user)
-			return ;
-		this->state = REGISTERED;
-		this->write(RPL_WELCOME(this, "Chadnet"));
-		this->write(RPL_YOURHOST(this));
-		this->motd();
-		return ;
-	}
-
-	if (this->state == REGISTERED)
-	{
-		this->onRegularPacket(packet);
-		return ;
-	}
 }

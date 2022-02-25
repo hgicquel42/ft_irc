@@ -39,7 +39,7 @@ string	ERR_UNKNOWNCOMMAND(const Client* client, const t_packet& packet)
 	vector<string> args;
 	args.push_back(client->nickname);
 	args.push_back(packet.args[0]);
-	args.push_back("Unknown command");
+	args.push_back("Unknown command, you cuck");
 	return (ft_format("421 %s %s :%s", args));
 }
 
@@ -67,7 +67,7 @@ string	ERR_NOTONCHANNEL(const Client* client, const Channel *channel)
 	vector<string> args;
 	args.push_back(client->nickname);
 	args.push_back(channel->name);
-	args.push_back("You're not on that channel");
+	args.push_back("You're not on that channel, idiot");
 	return (ft_format("442 %s %s :%s", args));
 }
 
@@ -77,7 +77,7 @@ string	ERR_USERONCHANNEL(const Client* client, const Client* target, const Chann
 	args.push_back(client->nickname);
 	args.push_back(target->nickname);
 	args.push_back(channel->name);
-	args.push_back("You're not on that channel");
+	args.push_back("is already on channel");
 	return (ft_format("443 %s %s %s :%s", args));
 }
 
@@ -130,6 +130,6 @@ string	ERR_CHANOPRIVSNEEDED(const Client* client, const Channel *channel)
 	vector<string> args;
 	args.push_back(client->nickname);
 	args.push_back(channel->name);
-	args.push_back("You're not channel operator");
+	args.push_back("You're not a channel operator");
 	return (ft_format("482 %s %s :%s", args));
 }

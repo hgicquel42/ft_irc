@@ -21,7 +21,7 @@ string	JOIN(const Client* client, const Channel* channel)
 	vector<string> args;
 	args.push_back(client->nickname);
 	args.push_back(channel->name);
-	return (ft_format(":%s JOIN %s", args));
+	return (ft_format(":%s@Chadnet JOIN %s", args));
 }
 
 string	QUIT(const Client* client, const string& reason)
@@ -91,7 +91,7 @@ string	RPL_WELCOME(const Client* client, const string& network)
 	args.push_back(client->nickname);
 	args.push_back(network);
 	args.push_back(client->nickname);
-	return (ft_format("001 %s :Welcome to the %s Network, %s", args));
+	return (ft_format("001 %s :Welcome to the %s Network bitches, %s", args));
 }
 
 string	RPL_YOURHOST(const Client* client)
